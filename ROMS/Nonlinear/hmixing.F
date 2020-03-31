@@ -371,7 +371,7 @@
             diff3d_r(i,j,k)=SQRT(diff3d_r(i,j,k))
 #   endif
 #   ifdef MASKING
-			diff3d_r(i,j,k)=MAX(diff3d_r(i,j,k),0.005_r8) !twu add 2 caps to diffusivity coefficient to stablize model!0.001_r8
+			diff3d_r(i,j,k)=MAX(diff3d_r(i,j,k),0.001_r8) !twu add 2 caps to diffusivity coefficient to stablize model!0.001_r8
 			diff3d_r(i,j,k)=MIN(diff3d_r(i,j,k),40.0_r8) !twu add 2 caps to diffusivity coefficient to stablize model !40.0_r8
             diff3d_r(i,j,k)=diff3d_r(i,j,k)*rmask(i,j) 
 #   endif

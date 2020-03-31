@@ -719,13 +719,11 @@
             rho(i,j,k)=rho(i,j,k)+SedDen
 #  endif
             rho(i,j,k)=rho(i,j,k)-1000.0_r8
-			IF (LdensityCLM(ng).and.LnudgeSP(ng)) THEN
-				                rho(i,j,k)=rho(i,j,k)+                  &
-     &                             dt(ng)*                              &
-     &                             NudgcoefSP*sec2day*        &
-     &                             (CLIMA(ng)%denclm(i,j,k)-           &
-     &                              rho(i,j,k))
-			END IF !twu 03192020
+            IF (LdensityCLM(ng).and.LnudgeSP(ng).and.                     &
+            &    (iic(ng).gt.0).and.(iic(ng).gt.ntstart(ng))) THEN
+                               rho(i,j,k)=rho(i,j,k)+dt(ng)*SPNUDG(ng)*     &
+            &                             (CLIMA(ng)%denclm(i,j,k)-rho(i,j,k))
+            END IF !twu 03192020
 #  ifdef MASKING
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #  endif
