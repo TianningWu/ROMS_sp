@@ -2,7 +2,7 @@
 #ifdef NONLINEAR
       SUBROUTINE set_data (ng, tile)
 !
-!svn $Id$
+!svn $Id: set_data.F 974 2019-07-25 15:28:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1323,6 +1323,19 @@
      &                 __FILE__)) RETURN
 #  endif
       END IF
+!-----------------------------------------------------------------------
+!  Set density climatology (kg/m3).
+!-----------------------------------------------------------------------
+! twu 03242020
+      IF (LdensityCLM(ng).and.((iic(ng).eq.0).or.(iic(ng).eq.ntstart(ng)))) THEN
+        CALL set_3dfld_tile (ng, tile, iNLM, idDclm,                    &
+     &                       LBi, UBi, LBj, UBj, 1, N(ng),              &
+     &                       CLIMA(ng)%denclmG,                           &
+     &                       CLIMA(ng)%denclm,                            &
+     &                       update)
+        IF (FoundError(exit_flag, NoError, __LINE__,                    &
+     &                 __FILE__)) RETURN
+      END IF 
 !
 !-----------------------------------------------------------------------
 !  Set tracers climatology.

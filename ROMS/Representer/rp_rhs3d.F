@@ -2,7 +2,7 @@
       MODULE rp_rhs3d_mod
 #if defined TL_IOMS && defined SOLVE3D
 !
-!svn $Id$
+!svn $Id: rp_rhs3d.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !

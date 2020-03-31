@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_idata (ng)
 !
-!svn $Id$
+!svn $Id: get_idata.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -22,6 +22,7 @@
       USE mod_grid
       USE mod_iounits
       USE mod_ncparam
+!	  use mod_clima !twu03232020
 #if defined AVERAGES  && defined AVERAGES_DETIDE && \
    (defined SSH_TIDES || defined UV_TIDES)
       USE mod_netcdf
@@ -482,8 +483,27 @@
         END DO
 # endif
       END IF
+	  
+
 #endif
 
+!#ifdef SOLVE3D
+!
+!  Density semi-prognostic nudging !twu 03232020
+!
+!        IF (LdensityCLM(ng)) THEN
+!          CALL get_3dfld (ng, iNLM, idDclm, CLM(ng)%ncid,            &
+!     &                    1, CLM(ng), update(1),                        &
+!     &                    LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,           &
+!#  ifdef MASKING
+!     &                    GRID(ng) % rmask,                             &
+!#  endif
+!     &                    CLIMA(ng) % denclm)
+!          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+!     &                   __FILE__)) RETURN
+!        END IF
+!#endif
+	
 #ifndef ANA_PSOURCE
 !
 !-----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_data (ng)
 !
-!svn $Id$
+!svn $Id: get_data.F 974 2019-07-25 15:28:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1069,6 +1069,20 @@
         END IF
       END DO
 # endif
+!
+!  Density !twu03182020
+!
+        IF (LdensityCLM(ng).and.((iic(ng).eq.0).or.(iic(ng).eq.ntstart(ng)))) THEN
+          CALL get_3dfld (ng, iNLM, idDclm, CLM(ng)%ncid,            &
+     &                    1, CLM(ng), update(1),                        &
+     &                    LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,           &
+#  ifdef MASKING
+     &                    GRID(ng) % rmask,                             &
+#  endif
+     &                    CLIMA(ng) % denclmG)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
 #endif
 
 #ifdef TLM_CHECK

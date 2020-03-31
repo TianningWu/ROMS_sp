@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_clima
 !
-!svn $Id$
+!svn $Id: mod_clima.F 967 2019-05-16 01:51:28Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -102,6 +102,8 @@
 # ifndef ANA_TCLIMA
           real(r8), pointer :: tclmG(:,:,:,:,:)
 # endif
+          real(r8), pointer :: denclm(:,:,:) !sp nudging twu 03182020 !0324
+          real(r8), pointer :: denclmG(:,:,:,:) !sp nudging twu 03182020 !0324
 #endif
 !
 !  Nudging coefficient arrays.
@@ -111,6 +113,8 @@
           real(r8), pointer :: M3nudgcof(:,:,:)
 
           real(r8), pointer :: Tnudgcof(:,:,:,:)
+		  
+          real(r8), pointer :: Dennudgcof(:,:,:) !sp nudging twu 03182020
 #endif
 
 #if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
@@ -221,6 +225,14 @@
         Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
 # endif
       END IF
+! twu 03182020 sp nudging 
+      IF (LdensityCLM(ng)) THEN
+        allocate ( CLIMA(ng) % denclm(LBi:UBi,LBj:UBj,N(ng)) )
+        Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+
+        allocate ( CLIMA(ng) % denclmG(LBi:UBi,LBj:UBj,N(ng),2) )
+        Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng),r8)*size2d
+	  END IF
 !
       IF (ANY(LtracerCLM(:,ng)).or.ANY(LnudgeTCLM(:,ng))) THEN
         allocate ( CLIMA(ng) % tclm(LBi:UBi,LBj:UBj,N(ng),NTCLM(ng)) )
@@ -244,6 +256,11 @@
 #ifdef SOLVE3D
       IF (LnudgeM3CLM(ng)) THEN
         allocate ( CLIMA(ng) % M3nudgcof(LBi:UBi,LBj:UBj,N(ng)) )
+        Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+      END IF
+! twu 03182020 sp nudging 
+      IF (LnudgeSP(ng)) THEN
+        allocate ( CLIMA(ng) % Dennudgcof(LBi:UBi,LBj:UBj,N(ng)) )
         Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
       END IF
 
@@ -419,6 +436,18 @@
           END DO
         END DO
       END IF
+! twu 03182020 sp nudging
+     IF (LdensityCLM(ng)) THEN
+        DO k=1,N(ng)
+          DO j=Jmin,Jmax
+            DO i=Imin,Imax
+              CLIMA(ng) % denclm(i,j,k) = IniVal
+			  CLIMA(ng) % denclmG(i,j,k,1) = IniVal
+			  CLIMA(ng) % denclmG(i,j,k,2) = IniVal
+            END DO
+          END DO
+        END DO
+     END IF
 !
       IF (ANY(LtracerCLM(:,ng)).or.ANY(LnudgeTCLM(:,ng))) THEN
         DO itrc=1,NTCLM(ng)
@@ -454,6 +483,16 @@
           DO j=Jmin,Jmax
             DO i=Imin,Imax
               CLIMA(ng) % M3nudgcof(i,j,k) = IniVal
+            END DO
+          END DO
+        END DO
+      END IF
+! twu 03182020 sp nudging
+      IF (LnudgeSP(ng)) THEN
+        DO k=1,N(ng)
+          DO j=Jmin,Jmax
+            DO i=Imin,Imax
+              CLIMA(ng) % Dennudgcof(i,j,k) = IniVal
             END DO
           END DO
         END DO

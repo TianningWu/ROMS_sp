@@ -2,7 +2,7 @@
       MODULE rp_set_vbc_mod
 #ifdef TL_IOMS
 !
-!svn $Id$
+!svn $Id: rp_set_vbc.F 970 2019-07-09 02:45:45Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !

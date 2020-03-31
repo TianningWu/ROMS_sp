@@ -2,7 +2,7 @@
       MODULE rho_eos_mod
 #ifdef SOLVE3D
 !
-!svn $Id$
+!svn $Id: rho_eos.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -136,6 +136,8 @@
       USE mod_param
       USE mod_eoscoef
       USE mod_scalars
+      USE mod_clima !twu 03192020
+      USE mod_ncparam !twu 03192020
 #  ifdef SEDIMENT
       USE mod_sediment
 #  endif
@@ -470,6 +472,11 @@
         DO k=1,N(ng)
           DO i=IstrT,IendT
             rho(i,j,k)=den(i,k)
+			IF (LdensityCLM(ng).and.LnudgeSP(ng).and.                     &
+     &    (iic(ng).gt.0).and.(iic(ng).gt.ntstart(ng))) THEN
+				rho(i,j,k)=rho(i,j,k)+dt(ng)*SPNUDG(ng)*     &
+     &                             (CLIMA(ng)%denclm(i,j,k)-rho(i,j,k))
+			END IF !twu 03192020
             pden(i,j,k)=(den1(i,k)-1000.0_r8)
 #  ifdef MASKING
             pden(i,j,k)=pden(i,j,k)*rmask(i,j)
@@ -599,6 +606,8 @@
 !
       USE mod_param
       USE mod_scalars
+      USE mod_clima !twu 03192020
+      USE mod_ncparam !twu 03192020
 #  ifdef SEDIMENT
       USE mod_sediment
 #  endif
@@ -710,6 +719,13 @@
             rho(i,j,k)=rho(i,j,k)+SedDen
 #  endif
             rho(i,j,k)=rho(i,j,k)-1000.0_r8
+			IF (LdensityCLM(ng).and.LnudgeSP(ng)) THEN
+				                rho(i,j,k)=rho(i,j,k)+                  &
+     &                             dt(ng)*                              &
+     &                             NudgcoefSP*sec2day*        &
+     &                             (CLIMA(ng)%denclm(i,j,k)-           &
+     &                              rho(i,j,k))
+			END IF !twu 03192020
 #  ifdef MASKING
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #  endif

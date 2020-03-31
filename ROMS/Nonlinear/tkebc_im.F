@@ -2,7 +2,7 @@
       MODULE tkebc_mod
 #if defined SOLVE3D && (defined MY25_MIXING || defined GLS_MIXING)
 !
-!svn $Id$
+!svn $Id: tkebc_im.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

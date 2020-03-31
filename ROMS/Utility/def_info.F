@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE def_info (ng, model, ncid, ncname, DimIDs)
 !
-!svn $Id$
+!svn $Id: def_info.F 973 2019-07-17 20:30:44Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -2005,6 +2005,15 @@
       IF (FoundError(exit_flag, NoError, __LINE__,                      &
      &               __FILE__)) RETURN
 
+      Vinfo( 1)='SPnudg'
+      Vinfo( 2)='Semi-prognostic nudging/relaxation inverse time scale'
+      Vinfo( 3)='day-1'
+      status=def_var(ng, model, ncid, varid, NF_TOUT,                   &
+     &               1, (/0/), Aval, Vinfo, ncname,                     &
+     &               SetParAccess = .FALSE.)
+      IF (FoundError(exit_flag, NoError, __LINE__,                      &
+     &               __FILE__)) RETURN !twu 03262020
+	 
       Vinfo( 1)='Tnudg'
       Vinfo( 2)='Tracers nudging/relaxation inverse time scale'
       Vinfo( 3)='day-1'

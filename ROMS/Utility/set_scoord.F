@@ -2,7 +2,7 @@
 #ifdef SOLVE3D
       SUBROUTINE set_scoord (ng)
 !
-!svn $Id$
+!svn $Id: set_scoord.F 937 2019-01-28 06:13:04Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

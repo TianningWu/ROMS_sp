@@ -1,4 +1,4 @@
-# svn $Id$
+# svn $Id: UNICOS-sn-f90.mk 981 2019-08-08 19:59:02Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::

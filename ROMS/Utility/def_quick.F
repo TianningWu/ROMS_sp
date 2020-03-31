@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE def_quick (ng, ldef)
 !
-!svn $Id$
+!svn $Id: def_quick.F 965 2019-05-09 03:07:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1468,6 +1468,45 @@
      &                   __FILE__)) RETURN
         END IF
 #ifdef SOLVE3D
+!
+!  Define model bottom U-momentum component in u grid. !T. Wu 01012020
+!
+        IF (Qout(idUbuu,ng)) THEN
+          Vinfo( 1)=Vname(1,idUbuu)
+          Vinfo( 2)=Vname(2,idUbuu)
+          Vinfo( 3)=Vname(3,idUbuu)
+          Vinfo(14)=Vname(4,idUbuu)
+          Vinfo(16)=Vname(1,idtime)
+# if defined WRITE_WATER && defined MASKING
+          Vinfo(20)='mask_u'
+# endif
+          Vinfo(22)='coordinates'
+          Aval(5)=REAL(Iinfo(1,idUbuu,ng),r8)
+          status=def_var(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idUbuu),   &
+     &                   NF_FOUT, nvd3, u2dgrd, Aval, Vinfo, ncname)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
+!
+!  Define model bottom V-momentum component in v grid. !T. Wu 01012020
+!
+        IF (Qout(idVbvv,ng)) THEN
+          Vinfo( 1)=Vname(1,idVbvv)
+          Vinfo( 2)=Vname(2,idVbvv)
+          Vinfo( 3)=Vname(3,idVbvv)
+          Vinfo(14)=Vname(4,idVbvv)
+          Vinfo(16)=Vname(1,idtime)
+# if defined WRITE_WATER && defined MASKING
+          Vinfo(20)='mask_v'
+# endif
+          Vinfo(22)='coordinates'
+          Aval(5)=REAL(Iinfo(1,idVbvv,ng),r8)
+          status=def_var(ng, iNLM, QCK(ng)%ncid, QCK(ng)%Vid(idVbvv),   &
+     &                   NF_FOUT, nvd3, v2dgrd, Aval, Vinfo, ncname)
+          IF (FoundError(exit_flag, NoError, __LINE__,                  &
+     &                   __FILE__)) RETURN
+        END IF
+		
 # ifdef BBL_MODEL
 !
 !  Define bottom U-current stress.
@@ -2490,6 +2529,12 @@
             got_var(idVbms)=.TRUE.
             QCK(ng)%Vid(idVbms)=var_id(i)
 #ifdef SOLVE3D
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idUbuu))) THEN !twu 01012020
+            got_var(idUbuu)=.TRUE.
+            QCK(ng)%Vid(idUbuu)=var_id(i)
+          ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idVbvv))) THEN !twu 01012020
+            got_var(idVbvv)=.TRUE.
+            QCK(ng)%Vid(idVbvv)=var_id(i)
 # ifdef BBL_MODEL
           ELSE IF (TRIM(var_name(i)).eq.TRIM(Vname(1,idUbrs))) THEN
             got_var(idUbrs)=.TRUE.
@@ -3036,6 +3081,18 @@
           RETURN
         END IF
 #ifdef SOLVE3D
+        IF (.not.got_var(idUbuu).and.Qout(idUbuu,ng)) THEN !twu 01012020
+          IF (Master) WRITE (stdout,70) TRIM(Vname(1,idUbuu)),          &
+     &                                  TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
+        IF (.not.got_var(idVbvv).and.Qout(idVbvv,ng)) THEN !twu 01012020
+          IF (Master) WRITE (stdout,70) TRIM(Vname(1,idVbvv)),          &
+     &                                  TRIM(ncname)
+          exit_flag=3
+          RETURN
+        END IF
 # ifdef BBL_MODEL
         IF (.not.got_var(idUbrs).and.Qout(idUbrs,ng)) THEN
           IF (Master) WRITE (stdout,70) TRIM(Vname(1,idUbrs)),          &

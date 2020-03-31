@@ -1,0 +1,12 @@
+12/04/2019 
+by Tianning
+File: ROMS/Nonlinear/hmixing.F (line 242):
+Original: "      real(r8), parameter :: SmagorCoef = 0.1_r8 "
+Changeto: "      real(r8), parameter :: SmagorCoef = 0.2_r8 " 
+#Changeback: "      real(r8), parameter :: SmagorCoef = 0.1_r8 " #02122020
+
+01/01/2020 
+by Tianning
+Add switches(idUbuu, idVbvv) for forwarding bottom velocities at u/v grids in qcksave without turning on BBL_MODEL application.
+According to ROMS FAQ https://www.myroms.org/wiki/Frequently_Asked_Questions#How_to_add_a_new_variable_to_ROMS_output_files.3F
+Files: ROMS/Utility/def_quick.F; ROMS/Utility/read_phypar.F; ROMS/Utility/wrt_quick.F; ROMS/Modules/mod_ncparam.F; ROMS/External/varinfo.dat

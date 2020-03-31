@@ -2,7 +2,7 @@
       MODULE extract_obs_mod
 #if (defined FOUR_DVAR || defined VERIFICATION) && defined OBSERVATIONS
 !
-!svn $Id$
+!svn $Id: extract_obs.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id$
+!svn $Id: mod_ncparam.F 991 2019-12-09 03:14:43Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -196,6 +196,7 @@
         integer  :: idFsuH        ! free-surface tide harmonics
         integer  :: idGhat(2)     ! KPP nonlocal transport
         integer  :: idgTnc        ! generic tracer nudging coefficients
+        integer  :: idgDnc        ! density nudging coefficients !twu 03182020
         integer  :: idJWTy        ! Jerlov water type
         integer  :: idHbbl        ! depth of bottom boundary layer
         integer  :: idHice        ! depth of ice cover
@@ -265,6 +266,7 @@
         integer  :: idSSHc        ! SSH climatology
         integer  :: idSSSc        ! SSS climatology
         integer  :: idSSTc        ! SST climatology
+        integer  :: idDclm        ! Density climatology for semi-prognostic nudging !twu 03182020	
         integer  :: idShea        ! net sensible heat flux
         integer  :: idSWCW        ! SIN(omega(k)*t)*COS(omega(l)*t)
         integer  :: idResi        ! 4D-Var residual vector
@@ -305,6 +307,7 @@
         integer  :: idUice        ! ice U-velocity
         integer  :: idUsms        ! surface U-momentum stress
         integer  :: idUsuE        ! model surface eastward velocity
+		integer  :: idUbuu		  ! 2D bottom U-velocity in u grid !twu 01012020
         integer  :: idUsur        ! surface U-velocity
         integer  :: idUtlf        ! 3D U-velocity impulse forcing
         integer  :: idUvel        ! 3D U-velocity
@@ -342,6 +345,7 @@
         integer  :: idVsms        ! surface V-momentum stress
         integer  :: idVsuN        ! model surface northward velocity
         integer  :: idVsur        ! surface V-velocity
+		integer  :: idVbvv		  ! 2D bottom V-velocity in v grid !twu 01012020
         integer  :: idVtlf        ! 3D V-velocity impulse forcing
         integer  :: idVvel        ! 3D V-velocity
         integer  :: idVvis        ! vertical viscosity coefficient
@@ -390,6 +394,7 @@
         integer, allocatable :: idTbot(:)    ! bottom flux for tracers
         integer, allocatable :: idTbry(:,:)  ! tracers boundary
         integer, allocatable :: idTclm(:)    ! tracers climatology
+!        integer, allocatable :: idDclm(:)    ! Density climatology!0324
         integer, allocatable :: idTnud(:)    ! tracers nudge coefficient
         integer, allocatable :: idTsur(:)    ! surface flux for tracers
         integer, allocatable :: idTtlf(:)    ! tracers impulse forcing
@@ -721,6 +726,10 @@
         allocate ( idTclm(MT) )
         Dmem(1)=Dmem(1)+REAL(MT,r8)
       END IF
+!      IF (.not.allocated(idDclm)) THEN
+!        allocate ( idDclm(1) )
+!        Dmem(1)=Dmem(1)+REAL(1,r8)
+!      END IF !twu 03242020
       IF (.not.allocated(idTnud)) THEN
         allocate ( idTnud(MT) )
         Dmem(1)=Dmem(1)+REAL(MT,r8)
@@ -1207,6 +1216,8 @@
               idv2dN=varid
             CASE ('idRv2d')
               idRv2d=varid
+            CASE ('idUbuu') !twu 01012020
+              idUbuu=varid
             CASE ('idUsur')
               idUsur=varid
             CASE ('idUsuE')
@@ -1217,6 +1228,8 @@
               idu3dE=varid
             CASE ('idRu3d')
               idRu3d=varid
+            CASE ('idVbvv') !twu 01012020
+              idVbvv=varid
             CASE ('idVsur')
               idVsur=varid
             CASE ('idVsuN')
@@ -1499,6 +1512,8 @@
               idSSSc=varid
             CASE ('idSSTc')
               idSSTc=varid
+            CASE ('idDclm') !twu 03182020
+              idDclm=varid  !twu 03182020
 #if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
     defined SO_SEMI
@@ -1541,6 +1556,8 @@
               idM3nc=varid
             CASE ('idgTnc')
               idgTnc=varid
+            CASE ('idgDnc') !twu 03182020
+              idgDnc=varid
 #ifdef AVERAGES_DETIDE
             CASE ('idCosW')
               idCosW=varid

@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_scalars
 !
-!svn $Id$
+!svn $Id: mod_scalars.F 982 2019-09-20 03:33:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -446,6 +446,7 @@
         logical, allocatable :: Lm2CLM(:)            ! 2D momentum
         logical, allocatable :: Lm3CLM(:)            ! 3D momentum
         logical, allocatable :: LtracerCLM(:,:)      ! tracers
+		logical, allocatable :: LdensityCLM(:)       ! density for semi-prognostic !twu 03192020
 !
 !  Switched to nudge to climatology fields.
 !
@@ -453,6 +454,8 @@
         logical, allocatable :: LnudgeM2CLM(:)       ! 2D momentum
         logical, allocatable :: LnudgeM3CLM(:)       ! 3D momentum
         logical, allocatable :: LnudgeTCLM(:,:)      ! tracers
+		logical, allocatable :: LnudgeSP(:)          ! density for semi-prognostic !twu 03192020
+		
 !
 !  Switches to activate point Source/Sinks in an application:
 !    * Horizontal momentum transport (u or v)
@@ -1281,6 +1284,8 @@
         real(dp), allocatable :: M2nudg(:)         ! 2D momentum
         real(dp), allocatable :: M3nudg(:)         ! 3D momentum
         real(dp), allocatable :: Tnudg(:,:)        ! Tracers
+        real(dp), allocatable :: SPNUDG(:)         ! density for semi-prognostic !twu 03192020
+
 !
 !  Variables used to impose mass flux conservation in open boundary
 !  configurations.
@@ -2039,7 +2044,15 @@
         allocate ( LtracerCLM(MT,Ngrids) )
         Dmem(1)=Dmem(1)+REAL(MT*Ngrids,r8)
       END IF
-
+      IF (.not.allocated(LdensityCLM)) THEN
+        allocate ( LdensityCLM(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF !twu 03192020
+	  IF (.not.allocated(SPNUDG)) THEN
+        allocate ( SPNUDG(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF !twu 03192020
+	  
       IF (.not.allocated(Lnudging)) THEN
         allocate ( Lnudging(Ngrids) )
         Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
@@ -2056,7 +2069,11 @@
         allocate ( LnudgeTCLM(MT,Ngrids) )
         Dmem(1)=Dmem(1)+REAL(MT*Ngrids,r8)
       END IF
-
+      IF (.not.allocated(LnudgeSP)) THEN
+        allocate ( LnudgeSP(Ngrids) )
+        Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
+      END IF !twu 03192020
+	  
       IF (.not.allocated(LuvSrc)) THEN
         allocate ( LuvSrc(Ngrids) )
         Dmem(1)=Dmem(1)+REAL(Ngrids,r8)
@@ -3301,9 +3318,11 @@
         Lnudging(ng)=.FALSE.
         LnudgeM2CLM(ng)=.FALSE.
         LnudgeM3CLM(ng)=.FALSE.
+		LnudgeSP(ng)=.FALSE. !twu 03192020
         Lclimatology(ng)=.FALSE.
         Lm2CLM(ng)=.FALSE.
         Lm3CLM(ng)=.FALSE.
+		LdensityCLM(ng)=.FALSE. !twu 03192020
         LsshCLM(ng)=.FALSE.
         Lsponge(ng)=.FALSE.
         LuvSponge(ng)=.FALSE.

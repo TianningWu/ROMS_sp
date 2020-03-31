@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id$
+!svn $Id: read_phypar.F 990 2019-12-03 04:00:29Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1007,6 +1007,8 @@
 #ifdef SOLVE3D
             CASE ('Lm3CLM')
               Npts=load_l(Nval, Cval, Ngrids, Lm3CLM)
+            CASE ('LdensityCLM') !twu 03192020
+              Npts=load_l(Nval, Cval, Ngrids, LdensityCLM)
             CASE ('LtracerCLM')
               Npts=load_l(Nval, Cval, NAT+NPT, Ngrids, Ltracer)
               DO ng=1,Ngrids
@@ -1026,6 +1028,10 @@
 #ifdef SOLVE3D
             CASE ('LnudgeM3CLM')
               Npts=load_l(Nval, Cval, Ngrids, LnudgeM3CLM)
+            CASE ('LnudgeSP') !twu 03192020
+              Npts=load_l(Nval, Cval, Ngrids, LnudgeSP)
+            CASE ('SPNUDG') !twu 03192020
+              Npts=load_r(Nval, Rval, Ngrids, SPNUDG)
             CASE ('LnudgeTCLM')
               Npts=load_l(Nval, Cval, NAT+NPT, Ngrids, Ltracer)
               DO ng=1,Ngrids
@@ -1968,13 +1974,29 @@
               Npts=load_l(Nval, Cval, Ngrids, Lswitch)
               Qout(idUsur,1:Ngrids)=Lswitch(1:Ngrids)
             CASE ('Qout(idVsur)')
-              IF (idUsur.eq.0) THEN
+              IF (idVsur.eq.0) THEN
                 IF (Master) WRITE (out,280) 'idVsur'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, Ngrids, Lswitch)
               Qout(idVsur,1:Ngrids)=Lswitch(1:Ngrids)
+            CASE ('Qout(idUbuu)') !twu 01012020
+              IF (idUbuu.eq.0) THEN
+                IF (Master) WRITE (out,280) 'idUbuu'
+                exit_flag=5
+                RETURN
+              END IF
+              Npts=load_l(Nval, Cval, Ngrids, Lswitch)
+              Qout(idUbuu,1:Ngrids)=Lswitch(1:Ngrids)
+            CASE ('Qout(idVbvv)') !twu 01012020
+              IF (idVbvv.eq.0) THEN
+                IF (Master) WRITE (out,280) 'idVbvv'
+                exit_flag=5
+                RETURN
+              END IF
+              Npts=load_l(Nval, Cval, Ngrids, Lswitch)
+              Qout(idVbvv,1:Ngrids)=Lswitch(1:Ngrids)			  
             CASE ('Qout(idUsuE)')
               IF (idUsuE.eq.0) THEN
                 IF (Master) WRITE (out,280) 'idUsuE'
@@ -3480,6 +3502,7 @@
 # ifndef ANA_M3CLIMA
         IF (Lm3CLM(ng)) CLM_FILE(ng)=.TRUE.
 # endif
+        IF (LdensityCLM(ng)) CLM_FILE(ng)=.TRUE. !twu 03192020
 # ifndef ANA_TCLIMA
         IF (ANY(LtracerCLM(:,ng))) CLM_FILE(ng)=.TRUE.
 # endif
@@ -4443,6 +4466,13 @@
             WRITE (out,170) Lm3CLM(ng), 'Lm3CLM',                       &
      &          'Turning OFF processing of 3D momentum climatology.'
           END IF
+          IF (LdensityCLM(ng)) THEN
+            WRITE (out,170) LdensityCLM(ng), 'LdensityCLM',                       &
+     &          'Turning ON  processing of density climatology for semi-prognostic nudging.'
+          ELSE
+            WRITE (out,170) LdensityCLM(ng), 'LdensityCLM',                       &
+     &          'Turning OFF processing of density climatology for semi-prognostic nudging.'
+          END IF !twu 03192020
           DO i=1,NAT
             IF (LtracerCLM(i,ng)) THEN
               WRITE (out,185) LtracerCLM(i,ng), 'LtracerCLM', i,        &
@@ -4484,6 +4514,15 @@
             WRITE (out,170) LnudgeM3CLM(ng), 'LnudgeM3CLM',             &
      &          'Turning OFF nudging of 3D momentum climatology.'
           END IF
+		  IF (LnudgeSP(ng)) THEN
+            WRITE (out,170) LnudgeSP(ng), 'LnudgeSP',             &
+     &          'Turning ON semi-prognostic nudging of 3D density climatology.'
+          ELSE
+            WRITE (out,170) LnudgeSP(ng), 'LnudgeSP',             &
+     &          'Turning OFF semi-prognostic nudging of 3D density climatology.'
+          END IF !twu 03192020
+          WRITE (out,210) SPNUDG(ng), 'SPNUDG',                           &
+     &          'Semi-prognostic nudging time scale (days).'
           DO i=1,NAT
             IF (LnudgeTCLM(i,ng)) THEN
               WRITE (out,185) LnudgeTCLM(i,ng), 'LnudgeTCLM', i,        &
@@ -5022,6 +5061,12 @@
             IF (Qout(idVsur,ng)) WRITE (out,170) Qout(idVsur,ng),       &
      &         'Qout(idVsur)',                                          &
      &         'Write out surface V-momentum component.'
+            IF (Qout(idUbuu,ng)) WRITE (out,170) Qout(idUbuu,ng),       &
+     &         'Qout(idUbuu)',                                          &
+     &         'Write out bottom U-momentum component in u grid.'
+            IF (Qout(idVbvv,ng)) WRITE (out,170) Qout(idVbvv,ng),       &
+     &         'Qout(idVbvv)',                                          &
+     &         'Write out bottom V-momentum component in v grid.'
             IF (Qout(idu3dE,ng)) WRITE (out,170) Qout(idu3dE,ng),       &
      &         'Qout(idu3dE)',                                          &
      &         'Write out 3D U-wastward  component at RHO-points.'

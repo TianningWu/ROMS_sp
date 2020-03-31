@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE inp_par (model)
 !
-!svn $Id$
+!svn $Id: inp_par.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -962,9 +962,10 @@
         IF (LsshCLM(ng).or.                                             &
             Lm2CLM (ng).or.LnudgeM2CLM(ng).or.                          &
             Lm3CLM (ng).or.LnudgeM3CLM(ng).or.                          &
+			LdensityCLM(ng).or.                                         &
             ANY(LtracerCLM(:,ng)).or.ANY(LnudgeTCLM(:,ng))) THEN
           Lclimatology(ng)=.TRUE.
-        END IF
+        END IF !twu 03252020
 #else
         IF (LsshCLM(ng).or.                                             &
             Lm2CLM (ng).or.LnudgeM2CLM(ng)) THEN
@@ -1006,6 +1007,13 @@
         ELSE
           M3nudg(ng)=0.0_r8
         END IF
+		
+        IF (SPNUDG(ng).gt.0.0_r8) THEN
+          SPNUDG(ng)=1.0_r8/(SPNUDG(ng)*86400.0_r8)
+        ELSE
+          SPNUDG(ng)=0.0_r8
+        END IF !twu 03262020
+		
 #endif
 !
 !  Set nudging coefficients (1/s) for passive/active (outflow/inflow)
