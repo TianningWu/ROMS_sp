@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_ncparam
 !
-!svn $Id$
+!svn $Id: mod_ncparam.F 991 2019-12-09 03:14:43Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -305,6 +305,7 @@
         integer  :: idUice        ! ice U-velocity
         integer  :: idUsms        ! surface U-momentum stress
         integer  :: idUsuE        ! model surface eastward velocity
+		integer  :: idUbuu		  ! 2D bottom U-velocity in u grid !twu 01012020
         integer  :: idUsur        ! surface U-velocity
         integer  :: idUtlf        ! 3D U-velocity impulse forcing
         integer  :: idUvel        ! 3D U-velocity
@@ -342,6 +343,7 @@
         integer  :: idVsms        ! surface V-momentum stress
         integer  :: idVsuN        ! model surface northward velocity
         integer  :: idVsur        ! surface V-velocity
+		integer  :: idVbvv		  ! 2D bottom V-velocity in v grid !twu 01012020
         integer  :: idVtlf        ! 3D V-velocity impulse forcing
         integer  :: idVvel        ! 3D V-velocity
         integer  :: idVvis        ! vertical viscosity coefficient
@@ -1207,6 +1209,8 @@
               idv2dN=varid
             CASE ('idRv2d')
               idRv2d=varid
+            CASE ('idUbuu') !twu 01012020
+              idUbuu=varid
             CASE ('idUsur')
               idUsur=varid
             CASE ('idUsuE')
@@ -1217,6 +1221,8 @@
               idu3dE=varid
             CASE ('idRu3d')
               idRu3d=varid
+            CASE ('idVbvv') !twu 01012020
+              idVbvv=varid
             CASE ('idVsur')
               idVsur=varid
             CASE ('idVsuN')

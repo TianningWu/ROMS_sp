@@ -2,7 +2,7 @@
 #if defined WEAK_CONSTRAINT && defined RPCG
       SUBROUTINE wrt_aug_imp (ng, tile, model, Iinp, Iout, INPncname)
 !
-!svn $Id$
+!svn $Id: wrt_aug_imp.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

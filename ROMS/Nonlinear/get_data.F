@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE get_data (ng)
 !
-!svn $Id$
+!svn $Id: get_data.F 974 2019-07-25 15:28:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

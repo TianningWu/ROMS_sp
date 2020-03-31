@@ -2,7 +2,7 @@
       MODULE bc_3d_mod
 #ifdef SOLVE3D
 !
-!svn $Id$
+!svn $Id: bc_3d.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

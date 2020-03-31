@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE def_var_mod
 !
-!svn $Id$
+!svn $Id: def_var.F 965 2019-05-09 03:07:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

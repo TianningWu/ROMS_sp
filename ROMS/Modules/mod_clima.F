@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE mod_clima
 !
-!svn $Id$
+!svn $Id: mod_clima.F 967 2019-05-16 01:51:28Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

@@ -1,4 +1,4 @@
-# svn $Id$
+# svn $Id: my_build_paths.bash 943 2019-01-31 23:21:29Z arango $
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Copyright (c) 2002-2020 The ROMS/TOMS Group                           :::
 #   Licensed under a MIT/X style license                                :::

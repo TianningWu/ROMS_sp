@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE metrics_mod
 !
-!svn $Id$
+!svn $Id: metrics.F 982 2019-09-20 03:33:52Z arango $
 !=======================================================================
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

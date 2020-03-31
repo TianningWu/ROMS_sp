@@ -1,7 +1,7 @@
 !
 !  ROMS/TOMS IO NetCDF variables.
 !
-!svn $Id$
+!svn $Id: varinfo.dat 991 2019-12-09 03:14:43Z arango $
 !========================================================= Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                                !
 !    Licensed under a MIT/X style license                                     !
@@ -64,7 +64,7 @@
 !------------------------------------------------------------------------------
 !
 
-'$URL$'
+'$URL: https://www.myroms.org/svn/src/trunk/ROMS/External/varinfo.dat $'
 
 !
 !------------------------------------------------------------------------------
@@ -186,6 +186,24 @@
   'v_sur, scalar, series'
   'ocean_time'
   'idVsur'
+  'v2dvar'
+  1.0d0
+
+'u_bot'                                            ! Output
+  'bottom u-momentum component in u grid'
+  'meter second-1'                                 ! [m/s]
+  'u_bot, scalar, series'
+  'ocean_time'
+  'idUbuu'
+  'u2dvar'
+  1.0d0
+
+'v_bot'                                            ! Output
+  'bottom v-momentum component in v grid'
+  'meter second-1'                                 ! [m/s]
+  'v_bot, scalar, series'
+  'ocean_time'
+  'idVbvv'
   'v2dvar'
   1.0d0
 

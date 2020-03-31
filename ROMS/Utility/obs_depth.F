@@ -4,7 +4,7 @@
      defined DISTRIBUTE   && defined SOLVE3D
       SUBROUTINE obs_depth (ng, tile, model)
 !
-!svn $Id$
+!svn $Id: obs_depth.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !

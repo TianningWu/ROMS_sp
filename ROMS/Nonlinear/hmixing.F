@@ -4,7 +4,7 @@
 
 #if (defined DIFF_3DCOEF || defined VISC_3DCOEF) && defined SOLVE3D
 !
-!svn $Id$
+!svn $Id: hmixing.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -239,7 +239,7 @@
 !
       integer :: i, j, k
 
-      real(r8), parameter :: SmagorCoef = 0.1_r8
+      real(r8), parameter :: SmagorCoef = 0.2_r8
       real(r8), parameter :: PecletCoef = 1.0_r8 / 12.0_r8
 
       real(r8) :: DefRate, cff, clip_diff, clip_scale
@@ -371,6 +371,8 @@
             diff3d_r(i,j,k)=SQRT(diff3d_r(i,j,k))
 #   endif
 #   ifdef MASKING
+			diff3d_r(i,j,k)=MAX(diff3d_r(i,j,k),0.001_r8)
+			diff3d_r(i,j,k)=MIN(diff3d_r(i,j,k),40.0_r8)
             diff3d_r(i,j,k)=diff3d_r(i,j,k)*rmask(i,j)
 #   endif
 #  endif

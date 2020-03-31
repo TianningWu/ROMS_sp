@@ -2,7 +2,7 @@
       MODULE ad_set_vbc_mod
 #ifdef ADJOINT
 !
-!svn $Id$
+!svn $Id: ad_set_vbc.F 974 2019-07-25 15:28:52Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group       Andrew M. Moore   !
 !    Licensed under a MIT/X style license                              !

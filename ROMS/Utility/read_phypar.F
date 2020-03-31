@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       SUBROUTINE read_PhyPar (model, inp, out, Lwrite)
 !
-!svn $Id$
+!svn $Id: read_phypar.F 990 2019-12-03 04:00:29Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
@@ -1968,13 +1968,29 @@
               Npts=load_l(Nval, Cval, Ngrids, Lswitch)
               Qout(idUsur,1:Ngrids)=Lswitch(1:Ngrids)
             CASE ('Qout(idVsur)')
-              IF (idUsur.eq.0) THEN
+              IF (idVsur.eq.0) THEN
                 IF (Master) WRITE (out,280) 'idVsur'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, Ngrids, Lswitch)
               Qout(idVsur,1:Ngrids)=Lswitch(1:Ngrids)
+            CASE ('Qout(idUbuu)') !twu 01012020
+              IF (idUbuu.eq.0) THEN
+                IF (Master) WRITE (out,280) 'idUbuu'
+                exit_flag=5
+                RETURN
+              END IF
+              Npts=load_l(Nval, Cval, Ngrids, Lswitch)
+              Qout(idUbuu,1:Ngrids)=Lswitch(1:Ngrids)
+            CASE ('Qout(idVbvv)') !twu 01012020
+              IF (idVbvv.eq.0) THEN
+                IF (Master) WRITE (out,280) 'idVbvv'
+                exit_flag=5
+                RETURN
+              END IF
+              Npts=load_l(Nval, Cval, Ngrids, Lswitch)
+              Qout(idVbvv,1:Ngrids)=Lswitch(1:Ngrids)			  
             CASE ('Qout(idUsuE)')
               IF (idUsuE.eq.0) THEN
                 IF (Master) WRITE (out,280) 'idUsuE'
@@ -5022,6 +5038,12 @@
             IF (Qout(idVsur,ng)) WRITE (out,170) Qout(idVsur,ng),       &
      &         'Qout(idVsur)',                                          &
      &         'Write out surface V-momentum component.'
+            IF (Qout(idUbuu,ng)) WRITE (out,170) Qout(idUbuu,ng),       &
+     &         'Qout(idUbuu)',                                          &
+     &         'Write out bottom U-momentum component in u grid.'
+            IF (Qout(idVbvv,ng)) WRITE (out,170) Qout(idVbvv,ng),       &
+     &         'Qout(idVbvv)',                                          &
+     &         'Write out bottom V-momentum component in v grid.'
             IF (Qout(idu3dE,ng)) WRITE (out,170) Qout(idu3dE,ng),       &
      &         'Qout(idu3dE)',                                          &
      &         'Write out 3D U-wastward  component at RHO-points.'

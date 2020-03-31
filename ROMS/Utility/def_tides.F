@@ -3,7 +3,7 @@
    (defined SSH_TIDES || defined UV_TIDES)
       SUBROUTINE def_tides (ng, ldef)
 !
-!svn $Id$
+!svn $Id: def_tides.F 965 2019-05-09 03:07:37Z arango $
 !================================================== Hernan G. Arango ===
 !  Copyright (c) 2002-2020 The ROMS/TOMS Group                         !
 !    Licensed under a MIT/X style license                              !
