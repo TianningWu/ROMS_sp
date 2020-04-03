@@ -65,7 +65,7 @@
      &                  GRID(ng) % om_v,                                &
      &                  GRID(ng) % on_u,                                &
      &                  GRID(ng) % z_w,                                 &
-     &                  OCEAN(ng) % rho,                                &
+     &                  OCEAN(ng) % rho_prsgrd,                         &
 # ifdef ATM_PRESS
      &                  FORCES(ng) % Pair,                              &
 # endif

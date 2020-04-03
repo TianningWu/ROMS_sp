@@ -21,6 +21,7 @@
 !                                                                      !
 !  pden         Potential Density anomaly (kg/m3).                     !
 !  rho          Density anomaly (kg/m3).                               !
+!  rho_prsgrd   Density anomaly sp-nudging for prsgrd.F (kg/m3). twu   ! 
 !  ru           Right-hand-side of 3D U-momentum equation (m4/s2).     !
 !  rv           Right hand side of 3D V-momentum equation (m4/s2).     !
 !  t            Tracer type variables (active and passive).            !
@@ -82,6 +83,7 @@
 #ifdef SOLVE3D
           real(r8), pointer :: pden(:,:,:)
           real(r8), pointer :: rho(:,:,:)
+		  real(r8), pointer :: rho_prsgrd(:,:,:)!twu 04032020
           real(r8), pointer :: ru(:,:,:,:)
           real(r8), pointer :: rv(:,:,:,:)
           real(r8), pointer :: t(:,:,:,:,:)
@@ -364,7 +366,10 @@
 
       allocate ( OCEAN(ng) % rho(LBi:UBi,LBj:UBj,N(ng)) )
       Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
-
+	  
+      allocate ( OCEAN(ng) % rho_prsgrd(LBi:UBi,LBj:UBj,N(ng)) )
+      Dmem(ng)=Dmem(ng)+REAL(N(ng),r8)*size2d
+	  
       allocate ( OCEAN(ng) % ru(LBi:UBi,LBj:UBj,0:N(ng),2) )
       Dmem(ng)=Dmem(ng)+2.0_r8*REAL(N(ng)+1,r8)*size2d
 
@@ -911,6 +916,7 @@
             DO i=Imin,Imax
               OCEAN(ng) % pden(i,j,k) = IniVal
               OCEAN(ng) % rho(i,j,k) = IniVal
+			  OCEAN(ng) % rho_prsgrd(i,j,k) = IniVal
 
               OCEAN(ng) % u(i,j,k,1) = IniVal
               OCEAN(ng) % u(i,j,k,2) = IniVal

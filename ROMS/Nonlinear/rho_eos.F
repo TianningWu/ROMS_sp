@@ -94,7 +94,8 @@
 #  endif
 # endif
      &                   OCEAN(ng) % pden,                              &
-     &                   OCEAN(ng) % rho)
+     &                   OCEAN(ng) % rho,                               &
+     &                   OCEAN(ng) % rho_prsgrd)                  
 # ifdef PROFILE
       CALL wclock_off (ng, model, 14, __LINE__, __FILE__)
 # endif
@@ -130,7 +131,8 @@
 #   endif
 #  endif
      &                         pden,                                    &
-     &                         rho)
+     &                         rho,                                     &
+     &                         rho_prsgrd)
 !***********************************************************************
 !
       USE mod_param
@@ -182,6 +184,7 @@
 #   endif
       real(r8), intent(out) :: pden(LBi:,LBj:,:)
       real(r8), intent(out) :: rho(LBi:,LBj:,:)
+      real(r8), intent(out) :: rho_prsgrd(LBi:,LBj:,:) !twu 04032020
 #  else
 #   ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
@@ -209,6 +212,7 @@
 #   endif
       real(r8), intent(out) :: pden(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(out) :: rho(LBi:UBi,LBj:UBj,N(ng))
+      real(r8), intent(out) :: rho_prsgrd(LBi:UBi,LBj:UBj,N(ng)) !twu 04032020
 #  endif
 !
 !  Local variable declarations.
@@ -472,11 +476,13 @@
         DO k=1,N(ng)
           DO i=IstrT,IendT
             rho(i,j,k)=den(i,k)
-			IF (LdensityCLM(ng).and.LnudgeSP(ng).and.                     &
-     &    (iic(ng).gt.0).and.(iic(ng).gt.ntstart(ng))) THEN
-				rho(i,j,k)=rho(i,j,k)+dt(ng)*SPNUDG(ng)*     &
-     &                             (CLIMA(ng)%denclm(i,j,k)-rho(i,j,k))
-			END IF !twu 03192020
+             IF (LdensityCLM(ng).and.LnudgeSP(ng)) THEN
+              rho_prsgrd(i,j,k)=SPNUDG(ng)*rho(i,j,k)   				&
+     &                          +(1.0_r8-SPNUDG(ng))    				&
+	 &                          *CLIMA(ng)%denclm(i,j,k)
+             ELSE
+              rho_prsgrd(i,j,k) = rho(i,j,k) 
+             END IF !twu 04032020  Richard et al. (2004)
             pden(i,j,k)=(den1(i,k)-1000.0_r8)
 #  ifdef MASKING
             pden(i,j,k)=pden(i,j,k)*rmask(i,j)
@@ -493,6 +499,9 @@
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          rho)
+        CALL exchange_r3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          rho_prsgrd) !twu 04032020
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          pden)
@@ -530,11 +539,11 @@
 
 #  ifdef DISTRIBUTE
 !
-      CALL mp_exchange3d (ng, tile, model, 2,                           &
+      CALL mp_exchange3d (ng, tile, model, 3,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    rho, pden)
+     &                    rho, pden, rho_prsgrd) !twu 04032020
 
 #   if defined LMD_SKPP    || defined LMD_BKPP         || \
        defined BULK_FLUXES || defined BALANCE_OPERATOR
@@ -601,7 +610,8 @@
 #   endif
 #  endif
      &                         pden,                                    &
-     &                         rho)
+     &                         rho,                                     &
+     &                         rho_prsgrd)
 !***********************************************************************
 !
       USE mod_param
@@ -653,6 +663,7 @@
 #   endif
       real(r8), intent(out) :: pden(LBi:,LBj:,:)
       real(r8), intent(out) :: rho(LBi:,LBj:,:)
+      real(r8), intent(out) :: rho_prsgrd(LBi:,LBj:,:) !twu 04032020
 #  else
 #   ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
@@ -680,6 +691,7 @@
 #   endif
       real(r8), intent(out) :: pden(LBi:UBi,LBj:UBj,N(ng))
       real(r8), intent(out) :: rho(LBi:UBi,LBj:UBj,N(ng))
+      real(r8), intent(out) :: rho_prsgrd(LBi:UBi,LBj:UBj,N(ng)) !twu 04032020
 #  endif
 !
 !  Local variable declarations.
@@ -719,11 +731,13 @@
             rho(i,j,k)=rho(i,j,k)+SedDen
 #  endif
             rho(i,j,k)=rho(i,j,k)-1000.0_r8
-            IF (LdensityCLM(ng).and.LnudgeSP(ng).and.                     &
-            &    (iic(ng).gt.0).and.(iic(ng).gt.ntstart(ng))) THEN
-                               rho(i,j,k)=rho(i,j,k)+dt(ng)*SPNUDG(ng)*     &
-            &                             (CLIMA(ng)%denclm(i,j,k)-rho(i,j,k))
-            END IF !twu 03192020
+             IF (LdensityCLM(ng).and.LnudgeSP(ng)) THEN
+              rho_prsgrd(i,j,k)=SPNUDG(ng)*rho(i,j,k)   				&
+     &                          +(1.0_r8-SPNUDG(ng))    				&
+	 &                          *CLIMA(ng)%denclm(i,j,k)
+             ELSE
+              rho_prsgrd(i,j,k) = rho(i,j,k)
+             END IF !twu 04032020  Richard et al. (2004)
 #  ifdef MASKING
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #  endif
@@ -818,6 +832,9 @@
      &                          rho)
         CALL exchange_r3d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          rho_prsgrd) !twu 04032020
+        CALL exchange_r3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
      &                          pden)
 
 #  if defined LMD_SKPP    || defined LMD_BKPP         || \
@@ -853,11 +870,11 @@
 
 #  ifdef DISTRIBUTE
 !
-      CALL mp_exchange3d (ng, tile, model, 2,                           &
+      CALL mp_exchange3d (ng, tile, model, 3,                           &
      &                    LBi, UBi, LBj, UBj, 1, N(ng),                 &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    rho, pden)
+     &                    rho, pden, rho_prsgrd) !twu 04032020
 
 #   if defined LMD_SKPP    || defined LMD_BKPP         || \
        defined BULK_FLUXES || defined BALANCE_OPERATOR
