@@ -878,11 +878,9 @@
               END IF
             END DO
 # endif
-
           END DO STEP_LOOP
 
         END DO NEST_LAYER
-
       END DO KERNEL_LOOP
 
       RETURN

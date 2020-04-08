@@ -1008,10 +1008,12 @@
           M3nudg(ng)=0.0_r8
         END IF
 		
-        IF (SPNUDG(ng).gt.0.0_r8) THEN
-          SPNUDG(ng)=1.0_r8/(SPNUDG(ng)*86400.0_r8)
-        ELSE
+        IF (SPNUDG(ng).ge.0.0_r8 .and. SPNUDG(ng).le.1.0_r8) THEN
+          SPNUDG(ng)=SPNUDG(ng)
+        ELSEIF (SPNUDG(ng).lt.0.0_r8) then
           SPNUDG(ng)=0.0_r8
+		ELSE
+		  SPNUDG(ng)=1.0_r8
         END IF !twu 03262020
 		
 #endif
