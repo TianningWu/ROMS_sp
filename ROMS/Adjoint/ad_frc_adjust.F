@@ -23,10 +23,10 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC :: ad_frc_adjust
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -42,10 +42,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iADM, 7, __LINE__, __FILE__)
+      CALL wclock_on (ng, iADM, 7, __LINE__, MyFile)
 # endif
       CALL ad_frc_adjust_tile (ng, tile,                                &
      &                         LBi, UBi, LBj, UBj,                      &
@@ -62,9 +65,9 @@
 # endif
      &                         Linp)
 # ifdef PROFILE
-      CALL wclock_off (ng, iADM, 7, __LINE__, __FILE__)
+      CALL wclock_off (ng, iADM, 7, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE ad_frc_adjust
 !
@@ -223,6 +226,7 @@
 #  endif
       END IF
 
+#  ifdef SALINITY
       IF (Lstflux(isalt,ng)) THEN
         DO j=JstrR,JendR
           DO i=IstrR,IendR
@@ -237,6 +241,7 @@
           END DO
         END DO
       END IF
+#  endif
 
       DO itrc=NAT+1,NT(ng)
         IF (Lstflux(itrc,ng)) THEN
@@ -248,14 +253,14 @@
               ad_tflux(i,j,it1,Linp,itrc)=ad_tflux(i,j,it1,Linp,itrc)+  &
      &                                    fac1*ad_stflx(i,j,itrc)
               ad_tflux(i,j,it2,Linp,itrc)=ad_tflux(i,j,it2,Linp,itrc)+  &
-     &                                  fac2*ad_stflx(i,j,itrc)
+     &                                    fac2*ad_stflx(i,j,itrc)
               ad_stflx(i,j,itrc)=0.0_r8
             END DO
           END DO
         END IF
       END DO
 # endif
-
+!
       RETURN
       END SUBROUTINE ad_frc_adjust_tile
 #endif

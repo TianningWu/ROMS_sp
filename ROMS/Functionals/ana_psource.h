@@ -18,8 +18,15 @@
       USE mod_ocean
       USE mod_stepping
 !
+!  Imported variable declarations
+!
       integer, intent(in) :: ng, tile, model
-
+!
+!  Local variable declarations.
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 #include "tile.h"
 !
       CALL ana_psource_tile (ng, tile, model,                           &
@@ -45,9 +52,9 @@
 #else
       IF (Lanafile.and.(tile.eq.0)) THEN
 #endif
-        ANANAME(20)=__FILE__
+        ANANAME(20)=MyFile
       END IF
-
+!
       RETURN
       END SUBROUTINE ana_psource
 !
@@ -113,7 +120,7 @@
 !  Local variable declarations.
 !
       integer :: Npts, NSUB, is, i, j, k, ised
-
+!
       real(r8) :: Pspv = 0.0_r8
       real(r8), save :: area_east, area_west
       real(r8) :: cff, fac, my_area_east, my_area_west
@@ -123,7 +130,7 @@
 #endif
 #if defined DISTRIBUTE
       real(r8), dimension(2) :: buffer
-
+!
       character (len=3), dimension(2) :: io_handle
 #endif
 
@@ -448,7 +455,9 @@
           DO k=1,N(ng)
             DO is=1,Nsrc(ng)
               SOURCES(ng)%Tsrc(is,k,itemp)=T0(ng)
+#  ifdef SALINITY
               SOURCES(ng)%Tsrc(is,k,isalt)=0.0_r8
+#  endif
             END DO
           END DO
         END IF
@@ -458,10 +467,14 @@
           DO k=1,N(ng)
             DO is=1,Nsrc(ng)-1
               SOURCES(ng)%Tsrc(is,k,itemp)=T0(ng)
+#  ifdef SALINITY
               SOURCES(ng)%Tsrc(is,k,isalt)=S0(ng)
+#  endif
             END DO
             SOURCES(ng)%Tsrc(Nsrc(ng),k,itemp)=T0(ng)
+#  ifdef SALINITY
             SOURCES(ng)%Tsrc(Nsrc(ng),k,isalt)=S0(ng)
+#  endif
           END DO
         END IF
 # else
@@ -469,6 +482,6 @@
 # endif
       END IF TRACERS
 #endif
-
+!
       RETURN
       END SUBROUTINE ana_psource_tile

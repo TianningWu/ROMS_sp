@@ -43,11 +43,12 @@
 !
 !  Local variable declarations.
 !
-# if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+# if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
      defined SO_SEMI
 #  ifndef OBS_SPACE
       logical :: GotScope(6)
+!
 #  endif
 # endif
       integer :: tile, LBi, UBi, LBj, UBj
@@ -56,30 +57,34 @@
       integer :: varid_dragL, varid_dragQ, varid_ZoBL
 # endif
       integer :: Vsize(4)
-
+# ifdef CHECKSUM
+      integer(i8b) :: Fhash
+# endif
+!
       real(dp), parameter :: Fscl = 1.0_dp
 
       real(r8) :: Fmax, Fmin
-
-      character (len=256) :: ncname
 !
-      SourceFile=__FILE__
+      character (len=256) :: ncname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Inquire about the contents of grid NetCDF file:  Inquire about
 !  the dimensions and variables.  Check for consistency.
 !-----------------------------------------------------------------------
 !
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ncname=GRD(ng)%name
 !
 !  Open grid NetCDF file for reading.
 !
       IF (GRD(ng)%ncid.eq.-1) THEN
         CALL netcdf_open (ng, model, ncname, 0, GRD(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname)
           RETURN
         END IF
@@ -89,15 +94,13 @@
 !
       CALL netcdf_check_dim (ng, model, ncname,                         &
      &                       ncid = GRD(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Inquire about the variables.
 !
       CALL netcdf_inq_var (ng, model, ncname,                           &
      &                     ncid = GRD(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # ifdef NESTING
 !
@@ -263,8 +266,7 @@
         CALL netcdf_get_lvar (ng, model, ncname, 'spherical',           &
      &                        spherical,                                &
      &                        ncid = GRD(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !-----------------------------------------------------------------------
@@ -304,8 +306,7 @@
             CALL netcdf_get_fvar (ng, model, ncname, 'xl',              &
      &                            xl(ng),                               &
      &                            ncid = GRD(ng)%ncid)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) EXIT
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) EXIT
 !
 !  Read in basin Y-length.
 !
@@ -313,8 +314,7 @@
             CALL netcdf_get_fvar (ng, model, ncname, 'el',              &
      &                            el(ng),                               &
      &                            ncid = GRD(ng)%ncid)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) EXIT
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) EXIT
 !
 !  Read in bathymetry.
 !
@@ -328,9 +328,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % h,                             &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % h)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -345,6 +349,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'bathymetry at RHO-points: h',        &
      &                            ng, TRIM(ncname), hmin(ng), hmax(ng)
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -354,8 +361,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % h,                   &
      &                        GRID(ng) % h)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -381,9 +387,13 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
      &                        GRID(ng) % rmask,                         &
+#  ifdef CHECKSUM
+     &                        GRID(ng) % rmask,                         &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % rmask)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -391,6 +401,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'mask on RHO-points: mask_rho',       &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
 #  ifdef NESTING
@@ -400,8 +413,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % rmask,               &
      &                        GRID(ng) % rmask)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -426,9 +438,13 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
      &                        GRID(ng) % umask,                         &
+#  ifdef CHECKSUM
+     &                        GRID(ng) % umask,                         &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % umask)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -436,6 +452,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'mask on U-points: mask_u',           &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
 #  ifdef NESTING
@@ -445,8 +464,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % umask,               &
      &                        GRID(ng) % umask)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_u2d_tile (ng, tile,                         &
@@ -471,9 +489,13 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
      &                        GRID(ng) % vmask,                         &
+#  ifdef CHECKSUM
+     &                        GRID(ng) % vmask,                         &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % vmask)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -481,6 +503,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'mask on V-points: mask_v',           &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
 #  ifdef NESTING
@@ -490,8 +515,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % vmask,               &
      &                        GRID(ng) % vmask)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_v2d_tile (ng, tile,                         &
@@ -516,9 +540,13 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        Fscl, Fmin, Fmax,                         &
      &                        GRID(ng) % pmask,                         &
+#  ifdef CHECKSUM
+     &                        GRID(ng) % pmask,                         &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % pmask)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -526,6 +554,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'mask on PSI-points: mask_psi',       &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -555,9 +586,13 @@
 #  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #  endif
+#  ifdef CHECKSUM
+     &                        GRID(ng) % zice,                          &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % zice)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -565,6 +600,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'ice shelf thickness: zice',          &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -595,9 +633,13 @@
 #  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #  endif
+#  ifdef CHECKSUM
+     &                        MIXING(ng) % Jwtype,                      &
+     &                        checksum = Fhash)
+#  else
      &                        MIXING(ng) % Jwtype)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -605,6 +647,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'Jerlov water type: wtype_grid',      &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -635,9 +680,13 @@
 #  ifdef MASKING
      &                          GRID(ng) % rmask,                       &
 #  endif
+#  ifdef CHECKSUM
+     &                          MIXING(ng) % visc_factor,               &
+     &                          checksum = Fhash)
+#  else
      &                          MIXING(ng) % visc_factor)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+#  endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -646,6 +695,9 @@
                   WRITE (stdout,30) 'horizontal viscosity sponge '//    &
      &                              'factor: visc_factor',              &
      &                              ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
                 END IF
               END IF
               IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -677,9 +729,13 @@
 #   ifdef MASKING
      &                          GRID(ng) % rmask,                       &
 #   endif
+#   ifdef CHECKSUM
+     &                          MIXING(ng) % diff_factor,               &
+     &                          checksum = Fhash)
+#   else
      &                          MIXING(ng) % diff_factor)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+#   endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -688,6 +744,9 @@
                   WRITE (stdout,30) 'horizontal diffusivity sponge '//  &
      &                              'factor: diff_factor',              &
      &                              ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
                 END IF
               END IF
               IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -718,9 +777,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % f,                             &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % f)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -728,6 +791,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'Coriolis parameter at RHO-points: f',&
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -737,8 +803,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % f,                   &
      &                        GRID(ng) % f)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -766,9 +831,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % pm,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % pm)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -776,6 +845,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'reciprocal XI-grid spacing: pm',     &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -785,8 +857,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % pm,                  &
      &                        GRID(ng) % pm)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -814,9 +885,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % pn,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % pn)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -824,6 +899,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'reciprocal ETA-grid spacing: pn',    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -833,8 +911,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % pn,                  &
      &                        GRID(ng) % pn)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 # endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -862,9 +939,13 @@
 #  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #  endif
+#  ifdef CHECKSUM
+     &                        GRID(ng) % dmde,                          &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % dmde)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -873,6 +954,9 @@
                 WRITE (stdout,30) 'ETA-derivative of inverse metric '// &
      &                            'factor pm: dmde',                    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
 #  ifdef NESTING
@@ -882,8 +966,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % dmde,                &
      &                        GRID(ng) % dmde)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -910,9 +993,13 @@
 #  ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #  endif
+#  ifdef CHECKSUM
+     &                        GRID(ng) % dndx,                          &
+     &                        checksum = Fhash)
+#  else
      &                        GRID(ng) % dndx)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#  endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -921,6 +1008,9 @@
                 WRITE (stdout,30) 'XI-derivative of inverse metric '//  &
      &                            'factor pn: dndx',                    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#  endif
               END IF
             END IF
 #  ifdef NESTING
@@ -930,8 +1020,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % dndx,                &
      &                        GRID(ng) % dndx)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -959,9 +1048,13 @@
 # ifdef MASKING
      &                        GRID(ng) % pmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % xp,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % xp)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -969,6 +1062,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'x-location of PSI-points: x_psi',    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef DISTRIBUTE
@@ -991,9 +1087,13 @@
 # ifdef MASKING
      &                        GRID(ng) % pmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % yp,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % yp)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1001,6 +1101,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'y-location of PSI-points: y-psi',    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef DISTRIBUTE
@@ -1023,9 +1126,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % xr,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % xr)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1033,6 +1140,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'x-location of RHO-points: x-rho',    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1043,8 +1153,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xr,                &
      &                          GRID(ng) % xr)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1067,9 +1177,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % yr,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % yr)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1077,6 +1191,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'y-location of RHO-points: y_rho',    &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1087,8 +1204,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yr,                &
      &                          GRID(ng) % yr)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1111,9 +1228,13 @@
 # ifdef MASKING
      &                        GRID(ng) % umask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % xu,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % xu)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1121,6 +1242,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'x-location of U-points: x_u',        &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1131,8 +1255,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xu,                &
      &                          GRID(ng) % xu)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1155,9 +1279,13 @@
 # ifdef MASKING
      &                        GRID(ng) % umask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % yu,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % yu)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1165,6 +1293,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'y-location of U-points: y_u',        &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1175,8 +1306,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yu,                &
      &                          GRID(ng) % yu)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1199,9 +1330,13 @@
 # ifdef MASKING
      &                        GRID(ng) % vmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % xv,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % xv)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1209,6 +1344,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'x-location of V-points: x_v',        &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1219,8 +1357,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xv,                &
      &                          GRID(ng) % xv)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1243,9 +1381,13 @@
 # ifdef MASKING
      &                        GRID(ng) % vmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % yv,                            &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % yv)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1253,6 +1395,9 @@
               IF (Master) THEN
                 WRITE (stdout,30) 'y-location of V-points: y_v',        &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 # ifdef NESTING
@@ -1263,8 +1408,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yv,                &
      &                          GRID(ng) % yv)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
 # endif
 # ifdef DISTRIBUTE
@@ -1288,9 +1433,13 @@
 # ifdef MASKING
      &                          GRID(ng) % pmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % lonp,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % lonp)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1298,6 +1447,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'longitude of PSI-points: lon_psi', &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef DISTRIBUTE
@@ -1322,9 +1474,13 @@
 # ifdef MASKING
      &                          GRID(ng) % pmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % latp,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % latp)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1332,6 +1488,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'latitude of PSI-points lat_psi',   &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef DISTRIBUTE
@@ -1356,9 +1515,13 @@
 # ifdef MASKING
      &                          GRID(ng) % rmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % lonr,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % lonr)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1367,6 +1530,9 @@
                   WRITE (stdout,30) 'longitude of RHO-points: lon_rho', &
      &                              ng, TRIM(ncname),                   &
      &                              LonMin(ng), LonMax(ng)
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1376,8 +1542,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xr,                &
      &                          GRID(ng) % lonr)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1401,9 +1567,13 @@
 # ifdef MASKING
      &                          GRID(ng) % rmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % latr,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % latr)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1412,6 +1582,9 @@
                   WRITE (stdout,30) 'latitude of RHO-points lat_rho',   &
      &                              ng, TRIM(ncname),                   &
      &                              LatMin(ng), LatMax(ng)
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1421,8 +1594,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yr,                &
      &                          GRID(ng) % latr)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1446,9 +1619,13 @@
 # ifdef MASKING
      &                          GRID(ng) % umask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % lonu,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % lonu)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1456,6 +1633,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'longitude of U-points: lon_u',     &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1465,8 +1645,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xu,                &
      &                          GRID(ng) % lonu)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1490,9 +1670,13 @@
 # ifdef MASKING
      &                          GRID(ng) % umask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % latu,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % latu)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1500,6 +1684,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'latitude of U-points: lat_u',      &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1509,8 +1696,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yu,                &
      &                          GRID(ng) % latu)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1534,9 +1721,13 @@
 # ifdef MASKING
      &                          GRID(ng) % vmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % lonv,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % lonv)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1544,6 +1735,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'longitude of V-points: lon_v',     &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1553,8 +1747,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Xv,                &
      &                          GRID(ng) % lonv)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1578,9 +1772,13 @@
 # ifdef MASKING
      &                          GRID(ng) % vmask,                       &
 # endif
+# ifdef CHECKSUM
+     &                          GRID(ng) % latv,                        &
+     &                          checksum = Fhash)
+# else
      &                          GRID(ng) % latv)
-              IF (FoundError(status, nf90_noerr, __LINE__,              &
-     &                       __FILE__)) THEN
+# endif
+              IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
                 exit_flag=2
                 ioerror=status
                 EXIT
@@ -1588,6 +1786,9 @@
                 IF (Master) THEN
                   WRITE (stdout,30) 'latitude of V-points: lat_v',      &
      &                              ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                  WRITE (stdout,60) Fhash
+# endif
                 END IF
               END IF
 # ifdef NESTING
@@ -1597,8 +1798,8 @@
      &                          LBi, UBi, LBj, UBj,                     &
      &                          CONTACT_METRIC(cr) % Yv,                &
      &                          GRID(ng) % latv)
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
 # endif
 # ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, model, 1,                   &
@@ -1621,9 +1822,13 @@
 # ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 # endif
+# ifdef CHECKSUM
+     &                        GRID(ng) % angler,                        &
+     &                        checksum = Fhash)
+# else
      &                        GRID(ng) % angler)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+# endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1632,6 +1837,9 @@
                 WRITE (stdout,30) 'angle between XI-axis and EAST: '//  &
      &                            'angler',                             &
      &                            ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+# endif
               END IF
             END IF
 #  ifdef NESTING
@@ -1641,8 +1849,7 @@
      &                        LBi, UBi, LBj, UBj,                       &
      &                        CONTACT_METRIC(cr) % angler,              &
      &                        GRID(ng) % angler)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 #  endif
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
               CALL exchange_r2d_tile (ng, tile,                         &
@@ -1656,8 +1863,8 @@
      &                          EWperiodic(ng), NSperiodic(ng),         &
      &                          GRID(ng) % angler)
 # endif
-# if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+# if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
      defined SO_SEMI
 #  ifndef OBS_SPACE
 !
@@ -1673,9 +1880,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Rscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Rscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1684,6 +1895,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on RHO-points: scope_rho',     &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             GotScope(1)=.TRUE.
@@ -1712,9 +1926,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % umask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Uscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Uscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1723,6 +1941,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on U-points: scope_u',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             GotScope(2)=.TRUE.
@@ -1751,9 +1972,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % vmask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Vscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Vscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -1762,6 +1987,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on V-points: scope_v',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             GotScope(3)=.TRUE.
@@ -1781,8 +2009,7 @@
 # endif
         END SELECT
       END DO
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,40) TRIM(var_name(i)), TRIM(ncname)
         RETURN
       END IF
@@ -1801,9 +2028,13 @@
 #   ifdef MASKING
      &                  GRID(ng) % rmask,                               &
 #   endif
+#   ifdef CHECKSUM
+     &                  GRID(ng) % ZoBot,                               &
+     &                  checksum = Fhash)
+#   else
      &                  GRID(ng) % ZoBot)
-      IF (FoundError(status, nf90_noerr, __LINE__,                      &
-     &               __FILE__)) THEN
+#   endif
+      IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,40) TRIM(Vname(1,idZoBL)),            &
      &                                TRIM(ncname)
         exit_flag=2
@@ -1814,6 +2045,9 @@
           WRITE (stdout,30) 'time invariant, bottom roughness '//       &
      &                      'length scale: ZoBot',                      &
      &                      ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+          WRITE (stdout,60) Fhash
+#   endif
         END IF
       END IF
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -1842,9 +2076,13 @@
 #   ifdef MASKING
      &                  GRID(ng) % rmask,                               &
 #   endif
+#   ifdef CHECKSUM
+     &                  GRID(ng) % rdrag,                               &
+     &                  checksum = Fhash)
+#   else
      &                  GRID(ng) % rdrag)
-      IF (FoundError(status, nf90_noerr, __LINE__,                      &
-     &               __FILE__)) THEN
+#   endif
+      IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,40) TRIM(Vname(1,idragL)),            &
      &                                TRIM(ncname)
         exit_flag=2
@@ -1854,6 +2092,9 @@
         IF (Master) THEN
           WRITE (stdout,30) 'linear bottom drag coefficient: rdrag',    &
      &                      ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
         END IF
       END IF
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -1882,9 +2123,13 @@
 #   ifdef MASKING
      &                  GRID(ng) % rmask,                               &
 #   endif
+#   ifdef CHECKSUM
+     &                  GRID(ng) % rdrag2,                              &
+     &                  checksum = Fhash)
+#   else
      &                  GRID(ng) % rdrag2)
-      IF (FoundError(status, nf90_noerr, __LINE__,                      &
-     &               __FILE__)) THEN
+#   endif
+      IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,40) TRIM(Vname(1,idragQ)),            &
      &                                TRIM(ncname)
         exit_flag=2
@@ -1894,6 +2139,9 @@
         IF (Master) THEN
           WRITE (stdout,30) 'quadratic bottom drag coefficient: rdrag2',&
      &                      ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
         END IF
       END IF
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -1914,11 +2162,10 @@
 ! Close GRID NetCDF file.
 !
       CALL netcdf_close (ng, model, GRD(ng)%ncid, ncname, .FALSE.)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
-# if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+# if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+     defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
      defined SO_SEMI
 #  ifndef OBS_SPACE
 !
@@ -1933,8 +2180,7 @@
 !
       IF (ADS(ng)%ncid.eq.-1) THEN
         CALL netcdf_open (ng, model, ncname, 0, ADS(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname)
           RETURN
         END IF
@@ -1944,15 +2190,13 @@
 !
       CALL netcdf_check_dim (ng, model, ncname,                         &
      &                       ncid = ADS(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Inquire about the variables.
 !
       CALL netcdf_inq_var (ng, model, ncname,                           &
      &                     ncid = ADS(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Check if the adjoint sensitivity scope arrays are available.
 !
@@ -2001,9 +2245,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % rmask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Rscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Rscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -2012,6 +2260,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on RHO-points: scope_rho',     &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -2039,9 +2290,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % umask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Uscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Uscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -2050,6 +2305,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on U-points: scope_u',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -2077,9 +2335,13 @@
 #   ifdef MASKING
      &                        GRID(ng) % vmask,                         &
 #   endif
+#   ifdef CHECKSUM
+     &                        GRID(ng) % Vscope,                        &
+     &                        checksum = Fhash)
+#   else
      &                        GRID(ng) % Vscope)
-            IF (FoundError(status, nf90_noerr, __LINE__,                &
-     &                     __FILE__)) THEN
+#   endif
+            IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
               exit_flag=2
               ioerror=status
               EXIT
@@ -2088,6 +2350,9 @@
                 WRITE (stdout,30) 'adjoint sensitivity spatial '//      &
      &                            'scope on V-points: scope_v',         &
      &                            ng, TRIM(ncname), Fmin, Fmax
+#   ifdef CHECKSUM
+                WRITE (stdout,60) Fhash
+#   endif
               END IF
             END IF
             IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
@@ -2104,8 +2369,7 @@
 #   endif
         END SELECT
       END DO
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) THEN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
         IF (Master) WRITE (stdout,40) TRIM(var_name(i)), TRIM(ncname)
         RETURN
       END IF
@@ -2122,6 +2386,10 @@
      &        /,12x,'in grid NetCDF file: ',a)
   50  FORMAT (/,' GET_GRID - Reading adjoint sensitivity scope arrays', &
      &        ' from file:',/12x,a)
+# ifdef CHECKSUM
+  60  FORMAT (19x,'(CheckSum = ',i0,')')
+# endif
+!
 #else
       SUBROUTINE get_grid
 #endif

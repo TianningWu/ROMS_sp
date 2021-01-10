@@ -43,7 +43,7 @@
       Coptions=' '
       IF (Master) WRITE (stdout,10)
   10  FORMAT (/,' Activated C-preprocessing Options:',/)
-  20  FORMAT (1x,a,t26,a)
+  20  FORMAT (1x,a,t27,a)
 !
       IF (Master) THEN
         WRITE (stdout,20) TRIM(ADJUSTL(MyAppCPP)), TRIM(ADJUSTL(title))
@@ -82,33 +82,45 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+9)=' ADJOINT,'
 #endif
-#if defined ADJUST_BOUNDARY     && \
-   (defined CORRELATION         || defined IS4DVAR           || \
-    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
-    defined W4DPSAS             || defined W4DVAR)
+#if defined ADJUST_BOUNDARY        && \
+   (defined CORRELATION            || \
+    defined I4DVAR                 || \
+    defined I4DVAR_ANA_SENSITIVITY || \
+    defined RBL4DVAR               || \
+    defined R4DVAR                 || \
+    defined SENSITIVITY_4DVAR      || \
+    defined SP4DVAR)
 !
       IF (Master) WRITE (stdout,20) 'ADJUST_BOUNDARY',                  &
-     &   'Including boundary conditions in 4DVar state estimation'
+     &   'Including boundary conditions in 4D-Var state estimation'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' ADJUST_BOUNDARY,'
 #endif
-#if defined ADJUST_STFLUX       && \
-   (defined CORRELATION         || defined IS4DVAR           || \
-    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
-    defined W4DPSAS             || defined W4DVAR)
+#if defined ADJUST_STFLUX          && \
+   (defined CORRELATION            || \
+    defined I4DVAR                 || \
+    defined I4DVAR_ANA_SENSITIVITY || \
+    defined RBL4DVAR               || \
+    defined R4DVAR                 || \
+    defined SENSITIVITY_4DVAR      || \
+    defined SP4DVAR)
 !
       IF (Master) WRITE (stdout,20) 'ADJUST_STFLUX',                    &
-     &   'Including surface tracer flux in 4DVar state estimation'
+     &   'Including surface tracer flux in 4D-Var state estimation'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' ADJUST_STFLUX,'
 #endif
-#if defined ADJUST_WSTRESS      && \
-   (defined CORRELATION         || defined IS4DVAR           || \
-    defined IS4DVAR_SENSITIVITY || defined SENSITIVITY_4DVAR || \
-    defined W4DPSAS             || defined W4DVAR)
+#if defined ADJUST_WSTRESS         && \
+   (defined CORRELATION            || \
+    defined I4DVAR                 || \
+    defined I4DVAR_ANA_SENSITIVITY || \
+    defined RBL4DVAR               || \
+    defined R4DVAR                 || \
+    defined SENSITIVITY_4DVAR      || \
+    defined SP4DVAR)
 !
       IF (Master) WRITE (stdout,20) 'ADJUST_WSTRESS',                   &
-     &   'Including surface wind stress in 4DVar state estimation'
+     &   'Including surface wind stress in 4D-Var state estimation'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+16)=' ADJUST_WSTRESS,'
 #endif
@@ -157,6 +169,15 @@
      &   'Shortwave radiation from albedo equation'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' ALBEDO,'
+#endif
+#if defined ALLOW_BOTTOM_OBS && \
+   (defined FOUR_DVAR        || \
+    defined VERIFICATION)    && defined OBSERVATIONS
+!
+      IF (Master) WRITE (stdout,20) 'ALLOW_BOTTOM_OBS',                 &
+     &   'Allow observations that lie in the lower bottom grid cell'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+18)=' ALLOW_BOTTOM_OBS,'
 #endif
 #if defined BIOLOGY && defined ANA_BIOLOGY
 !
@@ -336,9 +357,11 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' ANA_RESPIRATION,'
 #endif
-#if defined ANA_SCOPE        && \
-   (defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined ANA_SCOPE              && \
+   (defined AD_SENSITIVITY         || \
+    defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS       || \
+    defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI)
 !
       IF (Master) WRITE (stdout,20) 'ANA_SCOPE',                        &
@@ -614,6 +637,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' BODYFORCE,'
 #endif
+#ifdef CHECKSUM
+!
+      IF (Master) WRITE (stdout,20) 'CHECKSUM',                         &
+     &   'Report checksum (hash) values when processing I/O'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' CHECKSUM,'
+#endif
 #ifdef DISTRIBUTE
 # if defined BOUNDARY_ALLGATHER
 !
@@ -622,10 +652,10 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+20)=' BOUNDARY_ALLGATHER,'
 # else
-      IF (Master) WRITE (stdout,20) '!BOUNDARY_ALLGATHER',               &
+      IF (Master) WRITE (stdout,20) '!BOUNDARY_ALLGATHER',              &
      &   'Using mpi_allreduce in mp_boundary routine'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+11)=' !BOUNDARY_ALLGATHER,'
+      Coptions(is:is+21)=' !BOUNDARY_ALLGATHER,'
 # endif
 #endif
 #ifdef BULK_FLUXES
@@ -702,7 +732,7 @@
 #endif
 #ifdef COAMPS_COUPLING
 !
-      IF (Master) WRITE (stdout,20) 'COAMPS_COUPLING',                   &
+      IF (Master) WRITE (stdout,20) 'COAMPS_COUPLING',                  &
      &   'Atmosphere coupling with COAMPS'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' COAMPS_COUPLING,'
@@ -729,6 +759,14 @@
       Coptions(is:is+17)=' !COLLECT_ALL...,'
 # endif
 #endif
+#if defined CONCURRENT_KERNEL && defined DISJOINTED && \
+    defined DISTRIBUTE        && defined SP4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'CONCURRENT_KERNEL',                &
+     &   'Concurrent TLM and ADM in saddle-point 4D-Var'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' CONCURRENT_KERNEL,'
+#endif
 #ifdef CORRELATION
 !
       IF (Master) WRITE (stdout,20) 'CORRELATION',                      &
@@ -744,7 +782,7 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' DATA_COUPLING,'
 #endif
-#if defined DATALESS_LOOPS && defined W4DVAR
+#if defined DATALESS_LOOPS && defined R4DVAR
 !
       IF (Master) WRITE (stdout,20) 'DATALESS_LOOPS',                   &
      &   'Testing convergence of RPM Picard iterations'
@@ -879,6 +917,13 @@
       Coptions(is:is+11)=' DIFF_GRID,'
 # endif
 #endif
+#if defined DISJOINTED && defined DISTRIBUTE
+!
+      IF (Master) WRITE (stdout,20) 'DISJOINTED',                       &
+     &   'Split mpi-communicator into disjointed subgroups'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+12)=' DISJOINTED,'
+#endif
 #ifdef DIURNAL_SRFLUX
 !
       IF (Master) WRITE (stdout,20) 'DIURNAL_SRFLUX',                   &
@@ -994,6 +1039,13 @@
       Coptions(is:is+12)=' FORCING_SV,'
       idriver=idriver+1
 #endif
+#if defined FORWARD_FLUXES
+!
+      IF (Master) WRITE (stdout,20) 'FORWARD_FLUXES',                   &
+     &   'Using nonlinear model Forward fluxes for Tangent/Adjoint'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' FORWARD_FLUXES,'
+#endif
 #if defined FORWARD_MIXING && defined SOLVE3D
 !
       IF (Master) WRITE (stdout,20) 'FORWARD_MIXING',                   &
@@ -1067,6 +1119,13 @@
       Coptions(is:is+12)=' !FULL_GRID,'
 # endif
 #endif
+#ifdef GENERIC_DSTART
+!
+      IF (Master) WRITE (stdout,20) 'GENERIC_DSTART',                   &
+     &   'Avoid using ''dstart'' as initial time in ADM, TLM, and RPM'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' GENERIC_DSTART,'
+#endif
 #if defined GEOPOTENTIAL_HCONV && defined FOUR_DVAR && defined SOLVE3D
 !
       IF (Master) WRITE (stdout,20) 'GEOPOTENTIAL_HCONV',               &
@@ -1132,9 +1191,12 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ICESHELF,'
 #endif
-#if defined IMPACT_INNER        && defined OBS_IMPACT              && \
-   (defined IS4DVAR_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY || \
-    defined W4DPSAS_SENSITIVITY || defined W4DVAR_SENSITIVITY)
+#if defined IMPACT_INNER             && \
+    defined OBS_IMPACT               && \
+   (defined I4DVAR_ANA_SENSITIVITY   || \
+    defined RBL4DVAR_ANA_SENSITIVITY || \
+    defined RBL4DVAR_FCT_SENSITIVITY || \
+    defined R4DVAR_ANA_SENSITIVITY)
 !
       IF (Master) WRITE (stdout,20) 'IMPACT_INNER',                     &
      &   'Writing observations impacts for each inner loop'
@@ -1154,6 +1216,19 @@
      &   'Implicit Vertical Convolution Algorithm'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+16)=' IMPLICIT_VCONV,'
+#endif
+#ifdef INITIALIZE_AUTOMATIC
+!
+      IF (Master) WRITE (stdout,20) 'INITIALIZE_AUTOMATIC',             &
+     &   'Initialize automatic arrays in step2d for debugging'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+22)=' INITIALIZE_AUTOMATIC,'
+#endif
+#ifdef JEDI
+      IF (Master) WRITE (stdout,20) 'JEDI',                             &
+     &   'Joint Effort for Data Assimilation Integration'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+6)=' JEDI,'
 #endif
 #if defined LIMIT_BSTRESS && defined SOLVE3D  && !defined BBL_MODEL
 !
@@ -1198,20 +1273,20 @@
       Coptions(is:is+15)=' INNER_PRODUCT,'
       idriver=idriver+1
 #endif
-#ifdef IS4DVAR
+#if defined I4DVAR && !defined SPLIT_4DVAR
 !
-      IF (Master) WRITE (stdout,20) 'IS4DVAR',                          &
-     &   'Incremental strong constraint 4D-Var data assimilation'
+      IF (Master) WRITE (stdout,20) 'I4DVAR',                           &
+     &   'Incremental, strong constraint 4D-Var data assimilation'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+9)=' IS4DVAR,'
+      Coptions(is:is+8)=' I4DVAR,'
       idriver=idriver+1
 #endif
-#ifdef IS4DVAR_SENSITIVITY
+#ifdef I4DVAR_ANA_SENSITIVITY
 !
-      IF (Master) WRITE (stdout,20) 'IS4DVAR_SENSITIVITY',              &
+      IF (Master) WRITE (stdout,20) 'I4DVAR_ANA_SENSITIVITY',           &
      &   'I4D-Var Observations Sensitivity Analysis'
       is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+21)=' IS4DVAR_SENSITIVITY,'
+      Coptions(is:is+24)=' I4DVAR_ANA_SENSITIVITY,'
       idriver=idriver+1
 #endif
 #if defined INLINE_2DIO && defined DISTRIBUTE
@@ -1492,13 +1567,6 @@
       Coptions(is:is+15)=' NESTING_DEBUG,'
 # endif
 #endif
-#if defined NL_BULK_FLUXES
-!
-      IF (Master) WRITE (stdout,20) 'NL_BULK_FLUXES',                   &
-     &   'Using bulk fluxes computed by nonlinear model'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+16)=' NL_BULK_FLUXES,'
-#endif
 #if defined NLM_OUTER && defined WEAK_CONSTRAINT
 !
       IF (Master) WRITE (stdout,20) 'NLM_OUTER',                        &
@@ -1590,14 +1658,14 @@
 #ifdef OBSERVATIONS
 !
       IF (Master) WRITE (stdout,20) 'OBSERVATIONS',                     &
-     &   'Processing 4DVar observations'
+     &   'Processing 4D-Var observations'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' OBSERVATIONS,'
 #endif
 #ifdef OBS_IMPACT
 !
       IF (Master) WRITE (stdout,20) 'OBS_IMPACT',                       &
-     &   'Compute observation impact to the 4DVAR system'
+     &   'Compute observation impact to the 4D-Var system'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' OBS_IMPACT,'
 #endif
@@ -1608,10 +1676,10 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' OBS_IMPACT_SPLIT,'
 #endif
-#if defined OBS_SPACE && defined W4DPSAS_FCT_SENSITIVITY
+#if defined OBS_SPACE && defined RBL4DVAR_FCT_SENSITIVITY
 !
       IF (Master) WRITE (stdout,20) 'OBS_SPACE',                        &
-     &   'Forecast metric in obsrvation-space instead of state-space'
+     &   'Forecast metric in observation-space instead of state-space'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' OBS_SPACE,'
 #endif
@@ -1679,7 +1747,8 @@
      &   'Add oxygen dynamics'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+8)=' OXYGEN,'
-#elif !defined SURFACE_DO_SATURATION && defined HYPOXIA_SRM
+#endif
+#if defined HYPOXIA_SRM && !defined SURFACE_DO_SATURATION
 # ifdef OCMIP_OXYGEN_SC
 !
       IF (Master) WRITE (stdout,20) 'OCMIP_OXYGEN_SC',                  &
@@ -1700,6 +1769,21 @@
      &   'Parallel I/O processing'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' PARALLEL_IO,'
+#endif
+#if defined CARBON && defined BIO_FENNEL
+# if defined PC02AIR_DATA
+!
+      IF (Master) WRITE (stdout,20) 'PCO2AIR_DATA',                     &
+     &   'CO2 gas exchange from Laurent et al. (2017)'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+14)=' PCO2AIR_DATA,'
+# elif defined PCO2AIR_SECULAR
+!
+      IF (Master) WRITE (stdout,20) 'PCO2AIR_SECULAR',                  &
+     &   'CO2 gas exchange time-dependent evolution'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' PCO2AIR_SECULAR,'
+# endif
 #endif
 #ifdef PERFECT_RESTART
 !
@@ -1737,13 +1821,28 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' PJ_GRADPQ4,'
 #endif
-# if defined PRESS_COMPENSATE && defined ATM_PRESS
+#if defined PRESS_COMPENSATE && defined ATM_PRESS
 !
       IF (Master) WRITE (stdout,20) 'PRESS_COMPENSATE',                 &
      &   'Compensate for boundary data without ATM pressure effect'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+18)=' PRESS_COMPENSATE,'
-# endif
+#endif
+#if defined PO4 && defined BIO_FENNEL
+!
+      IF (Master) WRITE (stdout,20) 'PO4',                              &
+     &   'Phytoplanckton growth limited by Phosphorus'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+5)=' P04,'
+#endif
+#if defined PRIOR_BULK_FLUXES && defined BULK_FLUXES && \
+    defined FOUR_DVAR
+!
+      IF (Master) WRITE (stdout,20) 'PRIOR_BULK_FLUXES',                &
+     &   'Impose prior surface fluxes in other outer loops and analysis'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+19)=' PRIOR_BULK_FLUXES,'
+#endif
 #ifdef POSITIVE_ZERO
 !
       IF (Master) WRITE (stdout,20) 'POSITIVE_ZERO',                    &
@@ -1822,6 +1921,27 @@
       Coptions(is:is+24)=' !RADIAL_ANGLE_CCW_EAST,'
 # endif
 #endif
+#if defined OXYGEN && defined BIO_FENNEL
+# if defined OCMIP_OXYGEN_SC
+!
+      IF (Master) WRITE (stdout,20) 'OCMIP_OXYGEN_SC',                  &
+     &   'Schmidt number from Keeling et al. (1998)'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' OCMIP_OXYGEN_SC,'
+# elif defined RW14_OXYGEN_SC
+!
+      IF (Master) WRITE (stdout,20) 'RW14_OXYGEN_SC',                   &
+     &   'O2 Schmidt number from Wanninkhof (2014)'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' RW14_OXYGEN_SC,'
+# else
+!
+      IF (Master) WRITE (stdout,20) '!RW14_OXYGEN_SC',                  &
+     &   'Schmidt number from Wanninkhof (1992)'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' !RW14_OXYGEN_SC,'
+# endif
+#endif
 #if defined GLS_MIXING || defined MY25_MIXING
 # if defined K_C2ADVECTION
 !
@@ -1871,6 +1991,30 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+14)=' RAMP_TIDES,'
 #endif
+#if defined RBL4DVAR && !defined SPLIT_RBL4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'RBL4DVAR',                         &
+     &   'Strong/Weak constraint RBL4D-VAR data assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+10)=' RBL4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef RBL4DVAR_ANA_SENSITIVITY
+!
+      IF (Master) WRITE (stdout,20) 'RBL4DVAR_ANA_SENSITIVITY',         &
+     &   'RBL4D-VAR analysis observation sensitivity'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+26)=' RBL4DVAR_ANA_SENSITIVITY,'
+      idriver=idriver+1
+#endif
+#ifdef RBL4DVAR_FCT_SENSITIVITY
+!
+      IF (Master) WRITE (stdout,20) 'RBL4DVAR_FCT_SENSITIVITY',         &
+     &   'RBL4D-VAR forecast observation sensitivity'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+26)=' RBL4DVAR_FCT_SENSITIVITY,'
+      idriver=idriver+1
+#endif
 #if defined READ_WATER && defined MASKING
 !
       IF (Master) WRITE (stdout,20) 'READ_WATER',                       &
@@ -1881,7 +2025,7 @@
 #if defined RECOMPUTE_4DVAR && defined FOUR_DVAR
 !
       IF (Master) WRITE (stdout,20) 'RECOMPUTE_4DVAR',                  &
-     &   'Recomputing 4DVar during data assimilation analysis'
+     &   'Recomputing 4D-Var during data assimilation analysis'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' RECOMPUTE_4DVAR,'
 #endif
@@ -1929,6 +2073,20 @@
      &   'Regressing start clock by one coupling interval'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+20)=' REGRESS_STARTCLOCK,'
+#endif
+#ifdef REGRID_SHAPIRO
+!
+      IF (Master) WRITE (stdout,20) 'REGRID_SHAPIRO',                   &
+     &   'Applying Shapiro filter to regridded data'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' REGRID_SHAPIRO,'
+#endif
+#if defined RIVER_DON && defined BIO_FENNEL
+!
+      IF (Master) WRITE (stdout,20) 'RIVER_DON',                        &
+     &   'DON non-skinking source from rivers'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+5)=' RIVER_DON,'
 #endif
 #ifdef ROMS_STDOUT
 !
@@ -1979,10 +2137,11 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' RHO_SURF,'
 #endif
+
 #if defined RPCG && defined WEAK_CONSTRAINT
 !
       IF (Master) WRITE (stdout,20) 'RPCG',                             &
-     &   'Restricted B-preconditioned Lanczos minimization'
+     &   'Restricted B-preconditioned Lanczos minimization solver'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+6)=' RPCG,'
 #endif
@@ -2020,6 +2179,22 @@
      &   'Double precision fields in restart NetCDF file'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' !RST_SINGLE,'
+#endif
+#if defined R4DVAR && !defined SPLIT_R4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'R4DVAR',                           &
+     &   'Strong/Weak constraint, R4D-Var data assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+8)=' R4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef R4DVAR_ANA_SENSITIVITY
+!
+      IF (Master) WRITE (stdout,20) 'R4DVAR_ANA_SENSITIVITY',           &
+     &   'R4D-Var analysis  observation sensitivity'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+24)=' R4DVAR_ANA_SENSITIVITY,'
+      idriver=idriver+1
 #endif
 #ifdef SALINITY
 !
@@ -2166,9 +2341,56 @@
       Coptions(is:is+16)=' !SO_SEMI_WHITE,'
 # endif
 #endif
+#ifdef SPLIT_I4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SPLIT_I4DVAR',                     &
+     &   'Incremental, strong constraint Split 4D-Var data assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+14)=' SPLIT_I4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef SPLIT_RBL4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SPLIT_RBL4DVAR',                   &
+     &   'Strong/Weak constraint Split RBL4D-VAR data assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+16)=' SPLIT_RBL4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef SPLIT_R4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SPLIT_R4DVAR',                     &
+     &   'Strong/Weak constraint, Split R4D-Var data assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+14)=' SPLIT_R4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef SPLIT_SP4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SPLIT_SP4DVAR',                    &
+     &   'Weak Constraint, Saddle-Point Split 4D-Var Data Assimilation'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' SPLIT_SP4DVAR,'
+      idriver=idriver+1
+#endif
+#if defined SP4DVAR && !defined SPLIT_4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SP4DVAR',                          &
+     &   'Weak Constraint, Saddle-Point 4D-Var Data Assimilation.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+9)=' SP4DVAR,'
+      idriver=idriver+1
+#endif
+#ifdef SPHERICAL
+!
+      IF (Master) WRITE (stdout,20) 'SPHERICAL',                        &
+     &   'Spherical grid configuration'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+11)=' SPHERICAL,'
+#endif
 #if defined SPLINES_VCONV && defined FOUR_DVAR && defined VCONVOLUTION
 !
-      IF (Master) WRITE (stdout,20) 'IMPLICIT_VCONV',                   &
+      IF (Master) WRITE (stdout,20) 'SPLINES_VCONV',                    &
      &   'Implicit, Parabolic Splines Vertical Convolution Algorithm'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+16)=' SPLINES_VCONV,'
@@ -2186,13 +2408,6 @@
      &   'Parabolic Spline Reconstruction for Vertical Viscosity'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+15)=' SPLINES_VVISC,'
-#endif
-#ifdef SPHERICAL
-!
-      IF (Master) WRITE (stdout,20) 'SPHERICAL',                        &
-     &   'Spherical grid configuration'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+11)=' SPHERICAL,'
 #endif
 #if defined SSH_TIDES
 !
@@ -2300,6 +2515,13 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+23)=' SURFACE_DO_SATURATION,'
 #endif
+#if defined SUPPRESS_REPORT && defined SPLIT_4DVAR
+!
+      IF (Master) WRITE (stdout,20) 'SUPPRESS_REPORT',                  &
+     &   'Suppress report of repetitive configuration information'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+17)=' SUPPRESS_REPORT,'
+#endif
 #ifdef SWAN_COUPLING
 !
       IF (Master) WRITE (stdout,20) 'SWAN_COUPLING',                    &
@@ -2385,6 +2607,13 @@
      &   'Tangent Linear Model Linearization Check'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' TLM_CHECK,'
+#endif
+#if defined TRACING && defined PROFILE
+!
+      IF (Master) WRITE (stdout,20) 'TRACING',                          &
+     &   'Tracing sequence of routine calls for debugging'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+9)=' TRACING,'
 #endif
 #ifdef SOLVE3D
 # if defined T_PASSIVE
@@ -2647,49 +2876,9 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' VISC_3DCOEF,'
 #endif
-#ifdef W4DPSAS
-!
-      IF (Master) WRITE (stdout,20) 'W4DPSAS',                          &
-     &   'Weak constraint 4D-PSAS data assimilation'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+9)=' W4DPSAS,'
-      idriver=idriver+1
-#endif
-#ifdef W4DPSAS_FCT_SENSITIVITY
-!
-      IF (Master) WRITE (stdout,20) 'W4DPSAS_FCT_SENSITIVITY',          &
-     &   'Weak constraint 4D-PSAS observation forecast sensitivity'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+25)=' W4DPSAS_FCT_SENSITIVITY,'
-      idriver=idriver+1
-#endif
-#ifdef W4DPSAS_SENSITIVITY
-!
-      IF (Master) WRITE (stdout,20) 'W4DPSAS_SENSITIVITY',              &
-     &   'Weak constraint 4D-PSAS observation sensitivity'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+21)=' W4DPSAS_SENSITIVITY,'
-      idriver=idriver+1
-#endif
-#ifdef W4DVAR
-!
-      IF (Master) WRITE (stdout,20) 'W4DVAR',                           &
-     &   'Weak constraint 4DVAR data assimilation'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+8)=' W4DVAR,'
-      idriver=idriver+1
-#endif
-#ifdef W4DVAR_SENSITIVITY
-!
-      IF (Master) WRITE (stdout,20) 'W4DVAR_SENSITIVITY',               &
-     &   'Weak constraint 4DVAR observation sensitivity'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+20)=' W4DVAR_SENSITIVITY,'
-      idriver=idriver+1
-#endif
 #ifdef WAV_COUPLING
 !
-      IF (Master) WRITE (stdout,20) 'WAV_COUPLING',                      &
+      IF (Master) WRITE (stdout,20) 'WAV_COUPLING',                     &
      &   'Two-way wave-ocean models coupling'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' WAV_COUPLING,'
@@ -2700,6 +2889,13 @@
      &   'Activated weak constraint assimilation set-up'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' WEAK_CONSTRAINT,'
+#endif
+#if defined WEAK_NOINTERP && defined WEAK_CONSTRAINT
+!
+      IF (Master) WRITE (stdout,20) 'WEAK_NOINTERP',                    &
+     &   'Avoid time interpolation in weak constraint forcing'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' WEAK_NOINTERP,'
 #endif
 #if defined WRITE_WATER && defined MASKING
 !
@@ -3005,8 +3201,8 @@
             EXIT
           END IF
         END DO
- 210    FORMAT (/,' CHECKDEFS - cannot activate option: ',a,           &
-     &          /,13x,'in serial with partitions or shared-memory...', &
+ 210    FORMAT (/,' CHECKDEFS - cannot activate option: ',a,            &
+     &          /,13x,'in serial with partitions or shared-memory...',  &
      &          /,13x,'Use distributed-memory (MPI) in parallel runs.')
       END IF
 #endif
@@ -3077,9 +3273,9 @@
             EXIT
           END IF
         END DO
- 260    FORMAT (/,' CHECKDEFS - cannot activate option: ',a,           &
-     &          /,13x,'in serial with partitions or shared-memory...', &
-     &          /,13x,'There bugs in shared-memory that need fixing.', &
+ 260    FORMAT (/,' CHECKDEFS - cannot activate option: ',a,            &
+     &          /,13x,'in serial with partitions or shared-memory...',  &
+     &          /,13x,'There bugs in shared-memory that need fixing.',  &
      &          /,13x,'Use distributed-memory (MPI) in parallel runs.')
       END IF
 #endif

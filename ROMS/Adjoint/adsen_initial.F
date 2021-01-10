@@ -2,8 +2,8 @@
       MODULE adsen_initial_mod
 
 #if defined ADJOINT          && \
-   (defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+   (defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI)
 !
 !svn $Id: adsen_initial.F 937 2019-01-28 06:13:04Z arango $

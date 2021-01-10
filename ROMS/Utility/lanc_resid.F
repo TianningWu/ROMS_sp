@@ -1,7 +1,7 @@
 #include "cppdefs.h"
       MODULE lanc_resid_mod
 
-#if defined IS4DVAR
+#if defined I4DVAR
 !
 !svn $Id: lanc_resid.F 983 2019-10-03 16:24:14Z arango $
 !================================================== Hernan G. Arango ===
@@ -290,7 +290,7 @@
 !
       DO j=JstrR,JendR
         DO i=IstrR,IendR
-          ad_zeta(i,j,Lout)=-tl_zeta(i,j,Linp)+                        &
+          ad_zeta(i,j,Lout)=-tl_zeta(i,j,Linp)+                         &
      &                      ad_zeta(i,j,Lout )
         END DO
       END DO

@@ -75,7 +75,11 @@
 # ifdef FLOATS_NOT_YET
       integer :: Lend, Lstr, chunk_size
 # endif
+!
       real(r8) :: MaxDT, my_StepTime
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
 !=======================================================================
 !  Time-step tangent linear vertically integrated equations.
@@ -109,8 +113,7 @@
           CALL tl_get_data (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
 !
 !-----------------------------------------------------------------------
@@ -124,10 +127,10 @@
           END DO
 !$OMP BARRIER
         END DO
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
-# if defined WEAK_CONSTRAINT || defined FORCING_SV
+# if (defined WEAK_CONSTRAINT || defined FORCING_SV) && \
+     !defined SP4DVAR
 !
 !-----------------------------------------------------------------------
 !  If appropriate, add convolved adjoint solution impulse forcing to
@@ -139,12 +142,22 @@
 !
         DO ng=1,Ngrids
 #  ifdef WEAK_CONSTRAINT
-          IF (FrequentImpulse(ng)) THEN
-            DO tile=first_tile(ng),last_tile(ng),+1
-              CALL tl_forcing (ng, tile, kstp(ng), nstp(ng))
-            END DO
+#   ifdef WEAK_NOINTERP
+          IF ((iic(ng).gt.1).and.(iic(ng).ne.ntend(ng)+1).and.          &
+     &        (MOD(iic(ng)-1,nadj(ng)).eq.0)) THEN
+            IF (Master) THEN
+              WRITE (stdout,*) ' FORCING TLM at iic = ',iic(ng)
+            END IF
+#   endif
+            IF (FrequentImpulse(ng)) THEN
+              DO tile=first_tile(ng),last_tile(ng),+1
+                CALL tl_forcing (ng, tile, kstp(ng), nstp(ng))
+              END DO
 !$OMP BARRIER
+            END IF
+#   ifdef WEAK_NOINTERP
           END IF
+#   endif
 #  else
           DO tile=first_tile(ng),last_tile(ng),+1
             CALL tl_forcing (ng, tile, kstp(ng), nstp(ng))
@@ -309,8 +322,7 @@
           CALL tl_output (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-          IF ((FoundError(exit_flag, NoError, __LINE__,                 &
-     &                    __FILE__)).or.                                &
+          IF ((FoundError(exit_flag, NoError, __LINE__, MyFile)).or.    &
      &        ((iic(ng).eq.(ntend(ng)+1)).and.(ng.eq.Ngrids))) RETURN
         END DO
 !
@@ -403,7 +415,7 @@
         END DO
 # endif
       END DO STEP_LOOP
-
+!
       RETURN
       END SUBROUTINE tl_main2d
 #else

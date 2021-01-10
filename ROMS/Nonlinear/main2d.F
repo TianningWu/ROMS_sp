@@ -34,12 +34,15 @@
 # ifdef TLM_CHECK
       USE dotproduct_mod,       ONLY : nl_dotproduct
 # endif
-# if defined NLM_OUTER           || defined W4DPSAS                 ||\
-     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
+# if defined NLM_OUTER                || \
+     defined RBL4DVAR                 || \
+     defined RBL4DVAR_ANA_SENSITIVITY || \
+     defined RBL4DVAR_FCT_SENSITIVITY || \
+     defined SP4DVAR
       USE forcing_mod,          ONLY : forcing
 # endif
 # ifdef ADJUST_WSTRESS
-      USE frc_adjust_mod,       ONLY : frc_adjust
+      USE frc_adjust_mod,       ONLY : frc_adjust, load_frc
 # endif
       USE ini_fields_mod,       ONLY : ini_fields, ini_zeta
 # ifdef NESTING
@@ -82,13 +85,16 @@
 !  Local variable declarations.
 !
       logical :: DoNestLayer, Time_Step
-
+!
       integer :: Nsteps, Rsteps
       integer :: ig, il, istep, ng, nl, tile
       integer :: next_indx1
 # ifdef FLOATS
       integer :: Lend, Lstr, chunk_size
 # endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
 !=======================================================================
 !  Time-step vertically integrated equations.
@@ -122,8 +128,7 @@
 !  or just a single step (RunInterval=0).
 !
           CALL ntimesteps (iNLM, RunInterval, nl, Nsteps, Rsteps)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           IF ((nl.le.0).or.(nl.gt.NestLayers)) EXIT
 !
 !  Time-step governing equations for Nsteps.
@@ -141,8 +146,10 @@
               IF (step_counter(ng).eq.Rsteps) Time_Step=.FALSE.
             END DO
 
-# if defined NLM_OUTER           || defined W4DPSAS                 ||\
-     defined W4DPSAS_SENSITIVITY || defined W4DPSAS_FCT_SENSITIVITY
+# if defined NLM_OUTER                || \
+     defined RBL4DVAR                 || \
+     defined RBL4DVAR_ANA_SENSITIVITY || \
+     defined RBL4DVAR_FCT_SENSITIVITY
 !
 !-----------------------------------------------------------------------
 !  If appropriate, add convolved adjoint solution impulse forcing to
@@ -154,12 +161,22 @@
 !
             DO ig=1,GridsInLayer(nl)
               ng=GridNumber(ig,nl)
-              IF (FrequentImpulse(ng)) THEN
-                DO tile=first_tile(ng),last_tile(ng),+1
-                  CALL forcing (ng, tile, kstp(ng), nstp(ng))
-                END DO
+#  if defined WEAK_NOINTERP
+              IF ((iic(ng).gt.1).and.(iic(ng).ne.ntend(ng)+1).and.      &
+     &            (MOD(iic(ng)-1,nadj(ng)).eq.0)) THEN
+                IF (Master) THEN
+                  WRITE (stdout,*) ' FORCING NLM at iic = ',iic(ng)
+                END IF
+#  endif
+                IF (FrequentImpulse(ng)) THEN
+                  DO tile=first_tile(ng),last_tile(ng),+1
+                    CALL forcing (ng, tile, kstp(ng), nstp(ng))
+                  END DO
 !$OMP BARRIER
+                END IF
+#  if defined WEAK_NOINTERP
               END IF
+#  endif
             END DO
 # endif
 !
@@ -173,8 +190,8 @@
               CALL get_data (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END DO
 !
 !-----------------------------------------------------------------------
@@ -189,8 +206,7 @@
               END DO
 !$OMP BARRIER
             END DO
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Initialize all time levels and compute other initial fields.
@@ -248,8 +264,7 @@
               END DO
 !$OMP BARRIER
             END DO
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 
 # if defined ATM_COUPLING && defined MCT_LIB
 !
@@ -302,6 +317,7 @@
               IF (iic(ng).lt.(ntend(ng)+1)) THEN
                 DO tile=first_tile(ng),last_tile(ng),+1
                   CALL frc_adjust (ng, tile, Lfinp(ng))
+                  CALL load_frc (ng, tile, Lfout(ng))
                 END DO
 !$OMP BARRIER
               END IF
@@ -382,8 +398,7 @@
               CALL output (ng)
 !$OMP END MASTER
 !$OMP BARRIER
-              IF ((FoundError(exit_flag, NoError, __LINE__,             &
-     &                        __FILE__)).or.                            &
+              IF ((FoundError(exit_flag, NoError, __LINE__, MyFile)).or.&
      &            ((iic(ng).eq.(ntend(ng)+1)).and.(ng.eq.Ngrids))) THEN
                 RETURN
               END IF

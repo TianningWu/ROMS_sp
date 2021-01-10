@@ -33,7 +33,10 @@
 !
       integer :: Fcount, i
 !
-      SourceFile=__FILE__ // ", close_inp.F"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", close_inp.F"
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  If multi-file input fields, close several input files.
@@ -46,10 +49,10 @@
 !
       DO i=1,nFfiles(ng)
         IF ((FRC(i,ng)%Nfiles.gt.0).and.(FRC(i,ng)%ncid.ne.-1)) THEN
+          Fcount=FRC(i,ng)%Fcount
           CALL netcdf_close (ng, model, FRC(i,ng)%ncid,                 &
-     &                       FRC(i,ng)%name, .FALSE.)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+     &                       FRC(i,ng)%files(Fcount), .FALSE.)
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           FRCids=-1
           ncFRCid=-1
           Fcount=1
@@ -62,29 +65,37 @@
 !  If appropriate, close boundary files.
 !
       IF (ObcData(ng)) THEN
-        IF ((BRY(ng)%Nfiles.gt.0).and.(BRY(ng)%ncid.ne.-1)) THEN
-          CALL netcdf_close (ng, model, BRY(ng)%ncid,                   &
-     &                       BRY(ng)%name, .FALSE.)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
-          Fcount=1
-          BRY(ng)%Fcount=Fcount
-          BRY(ng)%name=TRIM(BRY(ng)%files(Fcount))
-        END IF
+        DO i=1,nBCfiles(ng)
+          IF ((BRY(i,ng)%Nfiles.gt.0).and.(BRY(i,ng)%ncid.ne.-1)) THEN
+            Fcount=BRY(i,ng)%Fcount
+            CALL netcdf_close (ng, model, BRY(i,ng)%ncid,               &
+     &                         BRY(i,ng)%files(Fcount),  .FALSE.)
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+            BRYids=-1
+            ncBRYid=-1
+            Fcount=1
+            BRY(i,ng)%Fcount=Fcount
+            BRY(i,ng)%name=TRIM(BRY(i,ng)%files(Fcount))
+          END IF
+        END DO
       END IF
 !
 !  If appropriate, close climatology files.
 !
       IF (CLM_FILE(ng)) THEN
-        IF ((CLM(ng)%Nfiles.gt.0).and.(CLM(ng)%ncid.ne.-1)) THEN
-          CALL netcdf_close (ng, model, CLM(ng)%ncid,                   &
-     &                       CLM(ng)%name, .FALSE.)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
-          Fcount=1
-          CLM(ng)%Fcount=Fcount
-          CLM(ng)%name=TRIM(CLM(ng)%files(Fcount))
-        END IF
+        DO i=1,nCLMfiles(ng)
+          IF ((CLM(i,ng)%Nfiles.gt.0).and.(CLM(i,ng)%ncid.ne.-1)) THEN
+            Fcount=CLM(i,ng)%Fcount
+            CALL netcdf_close (ng, model, CLM(i,ng)%ncid,               &
+     &                         CLM(i,ng)%files(Fcount),  .FALSE.)
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+            CLMids=-1
+            ncCLMid=-1
+            Fcount=1
+            CLM(i,ng)%Fcount=Fcount
+            CLM(i,ng)%name=TRIM(CLM(i,ng)%files(Fcount))
+          END IF
+        END DO
       END IF
 !
       RETURN
@@ -113,10 +124,13 @@
 !  Local variable declarations.
 !
       logical :: First
-
+!
       integer :: Fcount, MyError, i, ng
 !
-      SourceFile=__FILE__ // ", close_out"
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", close_out"
+!
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Close output NetCDF files. Set file indices to closed state.
@@ -126,16 +140,18 @@
         IF (RST(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iNLM, RST(ng)%ncid, RST(ng)%name)
         END IF
-#if defined FOUR_DVAR || defined ENKF_RESTART
+#if defined FOUR_DVAR || defined ENKF_RESTART || defined VERIFICATION
         IF (DAI(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iNLM, DAI(ng)%ncid, DAI(ng)%name)
         END IF
         IF (DAV(ng)%ncid.ne.-1) THEN
+          CALL netcdf_sync (ng, iNLM, DAV(ng)%name, DAV(ng)%ncid)
           CALL netcdf_close (ng, iNLM, DAV(ng)%ncid, DAV(ng)%name)
         END IF
 #endif
 #if defined FORWARD_READ || defined FORWARD_WRITE
-        IF ((FWD(ng)%ncid.ne.-1).and.(FWD(ng)%ncid.eq.HIS(ng)%ncid)) THEN
+        IF ((FWD(ng)%ncid.ne.-1).and.                                   &
+     &      (FWD(ng)%ncid.eq.HIS(ng)%ncid)) THEN
           FWD(ng)%ncid=-1
         END IF
         IF (FWD(ng)%ncid.ne.-1) THEN
@@ -148,6 +164,17 @@
         IF (QCK(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iNLM, QCK(ng)%ncid, QCK(ng)%name)
         END IF
+#ifdef SP4DVAR
+        IF (SPT(ng)%ncid.ne.-1) THEN
+          CALL netcdf_close (ng, iTLM, SPT(ng)%ncid, SPT(ng)%name)
+        END IF
+        IF (SCT(ng)%ncid.ne.-1) THEN
+          CALL netcdf_close (ng, iTLM, SCT(ng)%ncid, SCT(ng)%name)
+        END IF
+        IF (SPA(ng)%ncid.ne.-1) THEN
+          CALL netcdf_close (ng, iADM, SPA(ng)%ncid, SPA(ng)%name)
+        END IF
+#endif
 #ifdef ADJOINT
         IF (ADM(ng)%ncid.ne.-1) THEN
           CALL netcdf_close (ng, iADM, ADM(ng)%ncid, ADM(ng)%name)
@@ -330,8 +357,8 @@
 !  If applicable, report internal exit errors.
 !-----------------------------------------------------------------------
 !
-      IF (Master.and.(FoundError(exit_flag, NoError, __LINE__,          &
-     &               __FILE__))) THEN
+      IF (Master.and.                                                   &
+     &    (FoundError(exit_flag, NoError, __LINE__, MyFile))) THEN
         WRITE (stdout,40) Rerror(exit_flag), exit_flag
       END IF
       IF (blowup.ne.0) THEN
@@ -368,9 +395,9 @@
  10   FORMAT (/,' ROMS/TOMS - Output NetCDF summary for Grid ',         &
      &        i2.2,':')
  20   FORMAT (13x,'number of time records written in ',                 &
-     &        a,' file = ',i8.8)
+     &        a,' file = ',i0)
  30   FORMAT (/,a,/)
- 40   FORMAT (/,a,i3,/)
+ 40   FORMAT (/,a,i0,/)
  50   FORMAT (/,' MAIN: Abnormal termination: BLOWUP.',/,               &
      &          ' REASON: ',a)
  60   FORMAT (/,' ROMS/TOMS: DONE... ',a)
@@ -383,6 +410,6 @@
 110   FORMAT (/,' ERROR: Illegal domain partition.')
 120   FORMAT (/,' ERROR: Illegal input parameter.')
 130   FORMAT (/,' ERROR: Fatal algorithm result.')
-
+!
       RETURN
       END SUBROUTINE close_out

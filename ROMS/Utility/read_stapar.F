@@ -477,7 +477,7 @@
 !  Report input parameters.
 !-----------------------------------------------------------------------
 !
-      IF (Lwrite) THEN
+      IF (Master.and.Lwrite) THEN
         DO ng=1,Ngrids
           IF (Lstations(ng)) THEN
             WRITE (out,70) ng
@@ -684,9 +684,11 @@
             IF (Sout(idTsur(itemp),ng)) WRITE (out,90)                  &
      &          Sout(idTsur(itemp),ng), 'Sout(idTsur)',                 &
      &          'Write out surface net heat flux.'
+#  ifdef SALINITY
             IF (Sout(idTsur(isalt),ng)) WRITE (out,90)                  &
      &          Sout(idTsur(isalt),ng), 'Sout(idTsur)',                 &
      &          'Write out surface net salt flux.'
+#  endif
 #  ifdef SHORTWAVE
             IF (Sout(idSrad,ng)) WRITE (out,90) Sout(idSrad,ng),        &
      &          'Sout(idSrad)',                                         &
