@@ -1,8 +1,10 @@
 #include "cppdefs.h"
       MODULE tl_uv3drelax_mod
 
-#if defined TL_IOMS && defined RPM_RELAXATION && defined SOLVE3D && \
-    defined W4DVAR_SENSITIVITY
+#if defined TL_IOMS                && \
+    defined RPM_RELAXATION         && \
+    defined R4DVAR_ANA_SENSITIVITY && \
+    defined SOLVE3D
 !
 !svn $Id: tl_uv3drelax.F 937 2019-01-28 06:13:04Z arango $
 !=================================================== Andrew M. Moore ===
@@ -41,10 +43,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iTLM, 30, __LINE__, __FILE__)
+      CALL wclock_on (ng, iTLM, 30, __LINE__, MyFile)
 # endif
       CALL tl_uv3drelax_tile (ng, tile,                                 &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -63,8 +68,9 @@
      &                        OCEAN(ng) % tl_u,                         &
      &                        OCEAN(ng) % tl_v)
 # ifdef PROFILE
-      CALL wclock_off (ng, iTLM, 30, __LINE__, __FILE__)
+      CALL wclock_off (ng, iTLM, 30, __LINE__, MyFile)
 # endif
+!
       RETURN
       END SUBROUTINE tl_uv3drelax
 
@@ -220,6 +226,7 @@
           END DO
         END DO K_LOOP
       END IF
+!
       RETURN
       END SUBROUTINE tl_uv3drelax_tile
 #endif

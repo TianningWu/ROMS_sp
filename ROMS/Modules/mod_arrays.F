@@ -64,6 +64,9 @@
       integer :: LBi, UBi, LBj, UBj, LBij, UBij
 !
       integer, parameter :: model = 0
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 
 #ifdef PROFILE
 !
@@ -73,7 +76,7 @@
 !
       DO ng=1,Ngrids
         DO thread=THREAD_RANGE
-          CALL wclock_on (ng, iNLM, 1, __LINE__, __FILE__)
+          CALL wclock_on (ng, iNLM, 1, __LINE__, MyFile)
         END DO
 !$OMP BARRIER
       END DO
@@ -90,8 +93,8 @@
         tile=0
 #endif
 
-#if defined AD_SENSITIVITY   || defined IS4DVAR_SENSITIVITY || \
-    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR   || \
+#if defined AD_SENSITIVITY   || defined I4DVAR_ANA_SENSITIVITY || \
+    defined OPT_OBSERVATIONS || defined SENSITIVITY_4DVAR      || \
     defined SO_SEMI
         LallocateClima=.TRUE.
 #else
@@ -207,7 +210,7 @@
 !
       DO ng=1,Ngrids
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 1, __LINE__, __FILE__)
+          CALL wclock_off (ng, iNLM, 1, __LINE__, MyFile)
         END DO
 !$OMP BARRIER
       END DO

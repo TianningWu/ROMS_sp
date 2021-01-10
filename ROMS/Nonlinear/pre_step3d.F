@@ -55,10 +55,13 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 22, __LINE__, __FILE__)
+      CALL wclock_on (ng, iNLM, 22, __LINE__, MyFile)
 # endif
       CALL pre_step3d_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj,                         &
@@ -110,9 +113,9 @@
      &                      OCEAN(ng) % u,                              &
      &                      OCEAN(ng) % v)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 22, __LINE__, __FILE__)
+      CALL wclock_off (ng, iNLM, 22, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE pre_step3d
 !
@@ -589,7 +592,7 @@
             cff=0.5_r8*dt(ng)
           ELSE
             Gamma=1.0_r8/6.0_r8
-           cff=(1.0_r8-Gamma)*dt(ng)
+            cff=(1.0_r8-Gamma)*dt(ng)
           END IF
           iage=inert(itrc+1)                   ! even inert tracer index
           DO k=1,N(ng)
@@ -611,7 +614,7 @@
 !-----------------------------------------------------------------------
 !
       J_LOOP1 : DO j=Jstr,Jend
-        T_LOOP2: DO itrc=1,NT(ng)
+        T_LOOP2 : DO itrc=1,NT(ng)
 !
           VADV_FLUX : IF (Vadvection(itrc,ng)%SPLINES) THEN
 !
@@ -779,29 +782,8 @@
             END DO
           END IF VADV_FLUX
 !
-!  Apply mass point sources (volume vertical influx), if any.
-!  (Notice the j-loop is pipelined above).
-!
-          IF (LwSrc(ng)) THEN
-            DO is=1,Nsrc(ng)
-              Isrc=SOURCES(ng)%Isrc(is)
-              Jsrc=SOURCES(ng)%Jsrc(is)
-              IF (LtracerSrc(itrc,ng).and.                              &
-     &            ((Istr.le.Isrc).and.(Isrc.le.Iend+1)).and.            &
-     &            (j.eq.Jsrc)) THEN
-                DO k=1,N(ng)-1
-                  FC(Isrc,k)=FC(Isrc,k)+0.5_r8*                         &
-     &                       (SOURCES(ng)%Qsrc(is,k  )*                 &
-     &                        SOURCES(ng)%Tsrc(is,k  ,itrc)+            &
-     &                        SOURCES(ng)%Qsrc(is,k+1)*                 &
-     &                        SOURCES(ng)%Tsrc(is,k+1,itrc))
-                END DO
-              END IF
-            END DO
-          END IF
-!
 !  Compute artificial continuity equation and load it into private
-!  array DC (1/m). It is needed to preserve tracer constancy. It is
+!  array DC (1/m). It is imposed to preserve tracer constancy. It is
 !  not the same for all the tracer advection schemes because of the
 !  Gamma value.
 !
@@ -1164,7 +1146,7 @@
      &                    t(:,:,:,3,:))
 #  endif
 # endif
-
+!
       RETURN
       END SUBROUTINE pre_step3d_tile
 #endif

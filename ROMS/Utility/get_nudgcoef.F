@@ -51,35 +51,40 @@
 # ifdef SOLVE3D
       logical :: got_generic
       logical :: got_specific(NT(ng))
+!
 # endif
       integer :: tile, LBi, UBi, LBj, UBj
       integer :: gtype, i, ic, itrc
       integer :: nvatt, nvdim, status, vindex
       integer :: Vsize(4)
-
+# ifdef CHECKSUM
+      integer(i8b) :: Fhash
+# endif
+!
       real(dp) :: Fscl
       real(r8) :: Fmax, Fmin
-
+!
       character (len=40 ) :: tunits
       character (len=256) :: ncname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
-      SourceFile=__FILE__
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  Inquire about the contents of grid NetCDF file:  Inquire about
 !  the dimensions and variables.  Check for consistency.
 !-----------------------------------------------------------------------
 !
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       ncname=NUD(ng)%name
 !
 !  Open grid NetCDF file for reading.
 !
       IF (NUD(ng)%ncid.eq.-1) THEN
         CALL netcdf_open (ng, model, ncname, 0, NUD(ng)%ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
           WRITE (stdout,10) TRIM(ncname)
           RETURN
         END IF
@@ -89,15 +94,13 @@
 !
       CALL netcdf_check_dim (ng, model, ncname,                         &
      &                       ncid = NUD(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Inquire about the variables.
 !
       CALL netcdf_inq_var (ng, model, ncname,                           &
      &                     ncid = NUD(ng)%ncid)
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !-----------------------------------------------------------------------
 !  Check if required variables are available.
@@ -203,8 +206,7 @@
      &                       VarID = NUD(ng)%Vid(vindex),               &
      &                       nVarDim = nvdim,                           &
      &                       nVarAtt = nvatt)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO i=1,nvatt
           IF (TRIM(var_Aname(i)).eq.'units') THEN
             tunits=TRIM(var_Achar(i))
@@ -224,9 +226,13 @@
 # ifdef MASKING
      &                    GRID(ng) % rmask,                             &
 # endif
+# ifdef CHECKSUM
+     &                    CLIMA(ng) % M2nudgcof,                        &
+     &                    checksum = Fhash)
+# else
      &                    CLIMA(ng) % M2nudgcof)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__)) THEN
+# endif
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           exit_flag=2
           ioerror=status
           RETURN
@@ -235,6 +241,9 @@
             WRITE (stdout,40) TRIM(Vname(2,vindex))//': '//             &
      &                        TRIM(Vname(1,vindex)),                    &
      &                        ng, TRIM(ncname), Fmin, Fmax
+# ifdef CHECKSUM
+            WRITE (stdout,50) Fhash
+# endif
           END IF
         END IF
 !
@@ -268,8 +277,7 @@
      &                       VarID = NUD(ng)%Vid(vindex),               &
      &                       nVarDim = nvdim,                           &
      &                       nVarAtt = nvatt)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         DO i=1,nvatt
           IF (TRIM(var_Aname(i)).eq.'units') THEN
             tunits=TRIM(var_Achar(i))
@@ -289,9 +297,13 @@
 #  ifdef MASKING
      &                    GRID(ng) % rmask,                             &
 #  endif
+#  ifdef CHECKSUM
+     &                    CLIMA(ng) % M3nudgcof,                        &
+     &                    checksum = Fhash)
+#  else
      &                    CLIMA(ng) % M3nudgcof)
-        IF (FoundError(status, nf90_noerr, __LINE__,                    &
-     &                 __FILE__)) THEN
+#  endif
+        IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
           exit_flag=2
           ioerror=status
           RETURN
@@ -300,6 +312,9 @@
             WRITE (stdout,40) TRIM(Vname(2,vindex))//': '//             &
      &                        TRIM(Vname(1,vindex)),                    &
      &                        ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+            WRITE (stdout,50) Fhash
+#  endif
           END IF
         END IF
 !
@@ -394,8 +409,7 @@
      &                         VarID = NUD(ng)%Vid(vindex),             &
      &                         nVarDim = nvdim,                         &
      &                         nVarAtt = nvatt)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           DO i=1,nvatt
             IF (TRIM(var_Aname(i)).eq.'units') THEN
               tunits=TRIM(var_Achar(i))
@@ -415,9 +429,13 @@
 #  ifdef MASKING
      &                      GRID(ng) % rmask,                           &
 #  endif
+#  ifdef CHECKSUM
+     &                      CLIMA(ng) % Tnudgcof(:,:,:,ic),             &
+     &                      checksum = Fhash)
+#  else
      &                      CLIMA(ng) % Tnudgcof(:,:,:,ic))
-          IF (FoundError(status, nf90_noerr, __LINE__,                  &
-     &                   __FILE__)) THEN
+#  endif
+          IF (FoundError(status, nf90_noerr, __LINE__, MyFile)) THEN
             exit_flag=2
             ioerror=status
             RETURN
@@ -426,6 +444,9 @@
               WRITE (stdout,40) TRIM(Vname(2,vindex))//': '//           &
      &                          TRIM(Vname(1,vindex)),                  &
      &                          ng, TRIM(ncname), Fmin, Fmax
+#  ifdef CHECKSUM
+              WRITE (stdout,50) Fhash
+#  endif
             END IF
           END IF
 !
@@ -456,6 +477,10 @@
   40  FORMAT(2x,' GET_NUDGCOEF - ',a,/,19x,                             &
      &        '(Grid = ',i2.2,', File: ',a,')',/,19x,                   &
      &        '(Min = ', 1p,e15.8,0p,' Max = ',1p,e15.8,0p,')')
+# ifdef CHECKSUM
+  50  FORMAT (19x,'(CheckSum = ',i0,')')
+# endif
+!
 #else
       SUBROUTINE get_nudgcoef
 #endif

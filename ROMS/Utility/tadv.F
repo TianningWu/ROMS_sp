@@ -1,4 +1,5 @@
 #include "cppdefs.h"
+#ifdef SOLVE3D
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===
@@ -57,18 +58,18 @@
 ! Imported variable declarations.
 !
       integer, intent(in) :: ng, ncid
+      integer, intent(out) :: status
+!
       character (*), intent(in) :: ncname
       character (*), intent(in) :: aname
-
+!
       TYPE(T_ADV), intent(in) :: Hadv(MAXVAL(NT),Ngrids)
       TYPE(T_ADV), intent(in) :: Vadv(MAXVAL(NT),Ngrids)
-
-      integer, intent(out) :: status
 !
 ! Local variable declarations
 !
       integer :: i, ie, is, itrc, lvar, lstr, nTvar
-
+!
       character (len=   1) :: newline
       character (len=  13) :: Hstring, Vstring
       character (len=  17) :: frmt
@@ -86,7 +87,7 @@
       DO itrc=1,nTvar
         lvar=MAX(lvar, LEN_TRIM(Vname(1,idTvar(itrc))))
       END DO
-      WRITE (frmt,10) lvar+4
+      WRITE (frmt,10) MAX(10,lvar)+4
   10  FORMAT ("(a,':',t",i2.2,',a,a,a)')
 !
 !  Initialize attribute.
@@ -178,7 +179,7 @@
       END SUBROUTINE tadv_putatt
 !
 !***********************************************************************
-      SUBROUTINE tadv_report (iunit, model, Hadv, Vadv)
+      SUBROUTINE tadv_report (iunit, model, Hadv, Vadv, Lwrite)
 !***********************************************************************
 !                                                                      !
 !  This routine reports horizontal and vertical advection scheme for   !
@@ -190,6 +191,8 @@
 !     model         Calling model identifier (integer)                 !
 !     Hadv          Horizontal advection type structure, TYPE(T_ADV)   !
 !     Vadv          Vertical   advection type structure, TYPE(T_ADV)   !
+!     Lwrite        Switch to report information to standard output    !
+!                     unit or file (logical)                           !
 !                                                                      !
 !***********************************************************************
 !
@@ -202,15 +205,17 @@
 !
 ! Imported variable declarations.
 !
+      logical, intent(in) :: Lwrite
+!
       integer, intent(in) :: iunit, model
-
+!
       TYPE(T_ADV), intent(in) :: Hadv(MAXVAL(NT),Ngrids)
       TYPE(T_ADV), intent(in) :: Vadv(MAXVAL(NT),Ngrids)
 !
 ! Local variable declarations
 !
       integer :: i, itrc, ng
-
+!
       character (len=11) :: Hstring(MAXVAL(NT),Ngrids)
       character (len=11) :: Vstring(MAXVAL(NT),Ngrids)
 !
@@ -260,7 +265,7 @@
 !
 !  Report.
 !
-      IF (Master) THEN
+      IF (Master.and.Lwrite) THEN
         DO itrc=1,MAXVAL(NT)
           DO ng=1,Ngrids
             IF (ng.eq.1) THEN
@@ -405,7 +410,12 @@
  20   FORMAT (t26,i2,t31,a,t50,a)
  30   FORMAT (1x,a,t13,a)
  40   FORMAT (/,'TADV_REPORT - Illegal tracer advection scheme for ''', &
-    &         a,''' in grid: ',i0,/,14x,'''',a,'''',1x,a,'.',/)
+     &        a,''' in grid: ',i0,/,14x,'''',a,'''',1x,a,'.',/)
 !
       RETURN
       END SUBROUTINE tadv_report
+#else
+      SUBROUTINE tadv
+      RETURN
+      END SUBROUTINE tadv
+#endif

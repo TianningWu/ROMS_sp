@@ -196,7 +196,7 @@
 !  Report input parameters.
 !-----------------------------------------------------------------------
 !
-      IF (Lwrite) THEN
+      IF (Master.and.Lwrite) THEN
         DO ng=1,Ngrids
           WRITE (out,60) ng
           WRITE (out,70) Larvae_size0(ng), 'Larvae_size0',              &
@@ -283,7 +283,7 @@
   40  FORMAT (/,' READ_FloatsBioPar - Error while processing line: ',/, &
      &        a)
   50  FORMAT (/,' READ_FloatsBioPar - Error reading look table: ',a)
-  60  FORMAT (/,/,' Biological Floats Behavior Parameters, Grid: ',i2.2, &
+  60  FORMAT (/,/,' Biological Floats Behavior Parameters, Grid: ',i2.2,&
      &        /,  ' ===============================================',/)
   70  FORMAT (1p,e11.4,2x,a,t32,a)
   80  FORMAT (1x,i10,2x,a,t32,a)

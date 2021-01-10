@@ -1,11 +1,19 @@
-ROMS/TOMS Framework: Mar 10, 2020
+ROMS/TOMS Framework: December 28, 2020
 ===================
 
 Copyright (c) 2002-2020 The ROMS/TOMS Group
   Licensed under a MIT/X style license
   See License_ROMS.txt
 
+<<<<<<< HEAD
 svn: $HeadURL: https://www.myroms.org/svn/src/trunk/ROMS/Version $
 svn: $LastChangedBy: arango $
 svn: $LastChangedRevision: 991 $
 svn: $LastChangedDate: 2019-12-08 22:14:43 -0500 (Sun, 08 Dec 2019) $
+=======
+svn: $HeadURL$
+svn: $LastChangedBy$
+svn: $LastChangedRevision$
+svn: $LastChangedDate$
+
+>>>>>>> master

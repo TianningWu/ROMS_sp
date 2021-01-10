@@ -20,14 +20,14 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: ROMS_initialize
       PUBLIC  :: ROMS_run
       PUBLIC  :: ROMS_finalize
-
+!
       CONTAINS
-
+!
       SUBROUTINE ROMS_initialize (first, mpiCOMM)
 !
 !=======================================================================
@@ -45,6 +45,7 @@
       USE mod_iounits
       USE mod_scalars
 !
+      USE inp_par_mod,       ONLY : inp_par
 #ifdef MCT_LIB
 # ifdef ATM_COUPLING
       USE ocean_coupler_mod, ONLY : initialize_ocn2atm_coupling
@@ -58,13 +59,13 @@
 !  Imported variable declarations.
 !
       logical, intent(inout) :: first
-
+!
       integer, intent(in), optional :: mpiCOMM
 !
 !  Local variable declarations.
 !
       logical :: allocate_vars = .TRUE.
-
+!
 #ifdef DISTRIBUTE
       integer :: MyError, MySize
 #endif
@@ -72,6 +73,9 @@
 #ifdef _OPENMP
       integer :: my_threadnum
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_initialize"
 
 #ifdef DISTRIBUTE
 !
@@ -108,8 +112,7 @@
 !  grids and dimension parameters are known.
 !
         CALL inp_par (iNLM)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Set domain decomposition tile partition range.  This range is
 !  computed only once since the "first_tile" and "last_tile" values
@@ -142,7 +145,7 @@
         DO ng=1,Ngrids
 !$OMP PARALLEL
           DO thread=THREAD_RANGE
-            CALL wclock_on (ng, iNLM, 0, __LINE__, __FILE__)
+            CALL wclock_on (ng, iNLM, 0, __LINE__, MyFile)
           END DO
 !$OMP END PARALLEL
         END DO
@@ -185,8 +188,7 @@
 !$OMP PARALLEL
       CALL initial
 !$OMP END PARALLEL
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Initialize run or ensemble counter.
 !
@@ -202,8 +204,7 @@
           wrtNLmod(ng)=.TRUE.
           wrtObsScale(ng)=.TRUE.
           CALL def_mod (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
       END IF
 #endif
@@ -215,15 +216,14 @@
         DO ng=1,Ngrids
           LdefDAI(ng)=.TRUE.
           CALL def_dai (ng)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END DO
       END IF
 #endif
-
+!
       RETURN
       END SUBROUTINE ROMS_initialize
-
+!
       SUBROUTINE ROMS_run (RunInterval)
 !
 !=======================================================================
@@ -256,6 +256,9 @@
 !
       real(dp) :: ENDtime, NEXTtime
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_run"
 !
 !-----------------------------------------------------------------------
 !  Time-step nonlinear model over nested grids, if applicable.
@@ -296,15 +299,14 @@
 #endif
 !$OMP END PARALLEL
 
-      IF (FoundError(exit_flag, NoError, __LINE__,                      &
-     &               __FILE__)) RETURN
+      IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
  10   FORMAT (1x,a,1x,'ROMS/TOMS: started time-stepping:',              &
      &        ' (Grid: ',i2.2,' TimeSteps: ',i12.12,' - ',i12.12,')')
-
+!
       RETURN
       END SUBROUTINE ROMS_run
-
+!
       SUBROUTINE ROMS_finalize
 !
 !=======================================================================
@@ -325,6 +327,9 @@
 #ifdef ENKF_RESTART
       integer :: tile
 #endif
+!
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", ROMS_finalize"
 
 #ifdef ENKF_RESTART
 !
@@ -351,11 +356,9 @@
 !  Compute and report model-observation comparison statistics.
 !-----------------------------------------------------------------------
 !
-      IF (exit_flag.eq.NoError) THEN
-        DO ng=1,Ngrids
-          CALL stats_modobs (ng)
-        END DO
-      END IF
+      DO ng=1,Ngrids
+        CALL stats_modobs (ng)
+      END DO
 #endif
 !
 !-----------------------------------------------------------------------
@@ -367,7 +370,7 @@
       IF (exit_flag.eq.1) THEN
         DO ng=1,Ngrids
           IF (LwrtRST(ng)) THEN
-            IF (Master) WRITE (stdout,10), TRIM(blowup_string)
+            IF (Master) WRITE (stdout,10) TRIM(blowup_string)
  10         FORMAT (/,' Blowing-up: Saving latest model state into ',   &
      &                ' RESTART file',/,'     REASON: ',a,/)
             Fcount=RST(ng)%load
@@ -391,13 +394,13 @@
 !
       IF (Master) THEN
         WRITE (stdout,20)
- 20     FORMAT (/,' Elapsed CPU time (seconds):',/)
+ 20     FORMAT (/,'Elapsed wall CPU time for each process (seconds):',/)
       END IF
 !
       DO ng=1,Ngrids
 !$OMP PARALLEL
         DO thread=THREAD_RANGE
-          CALL wclock_off (ng, iNLM, 0, __LINE__, __FILE__)
+          CALL wclock_off (ng, iNLM, 0, __LINE__, MyFile)
         END DO
 !$OMP END PARALLEL
       END DO
@@ -414,7 +417,7 @@
         CALL close_inp (ng, iNLM)
       END DO
       CALL close_out
-
+!
       RETURN
       END SUBROUTINE ROMS_finalize
 

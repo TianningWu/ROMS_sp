@@ -1,8 +1,10 @@
 #include "cppdefs.h"
       MODULE forcing_mod
 
-#if defined NLM_OUTER  || defined SENSITIVITY_4DVAR || \
-    defined TL_W4DPSAS || defined W4DPSAS
+#if defined NLM_OUTER         || defined RBL4DVAR || \
+    defined SENSITIVITY_4DVAR || defined SP4DVAR  || \
+    defined TL_RBL4DVAR
+
 !
 !svn $Id: forcing.F 937 2019-01-28 06:13:04Z arango $
 !================================================== Hernan G. Arango ===
@@ -17,10 +19,10 @@
 !=======================================================================
 !
       implicit none
-
+!
       PRIVATE
       PUBLIC  :: forcing
-
+!
       CONTAINS
 !
 !***********************************************************************
@@ -64,7 +66,7 @@
      &                   COUPLING(ng) % Zt_avg1,                        &
 # endif
      &                   OCEAN(ng) % zeta)
-
+!
       RETURN
       END SUBROUTINE forcing
 !
@@ -232,7 +234,7 @@
         END DO
       END DO
 # endif
-
+!
       RETURN
       END SUBROUTINE forcing_tile
 #endif

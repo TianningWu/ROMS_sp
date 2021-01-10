@@ -55,30 +55,33 @@
 !  Imported variable declarations.
 !
       logical, intent(in) :: Lmulti
-
+!
       integer, intent(in) :: ng, model, job, ifield, nfiles
       integer, intent(in) :: Iout, Irec, Mrec
       integer, intent(inout) :: ncid
-
+!
       TYPE(T_IO), intent(inout) :: S(nfiles)
 !
 !  Local variable declarations.
 !
       logical :: CloseFile, Liocycle, Lgridded, Lonerec
       logical :: foundit, got_var, got_time, special
-
+!
       integer :: Fcount, Nrec, Tid, Tindex, Trec, Vid, Vtype
       integer :: i, ifile, lstr, my_ncid, nvatt, nvdim
       integer :: Vsize(4)
-
+!
       real(dp) :: Clength, Tend, Tmax, Tmin, Tmono, Tscale, Tstr, Tval
       real(dp) :: scale
-
+!
       character (len=1  ), parameter :: blank = ' '
       character (len=3  ) :: label
       character (len=256) :: Fname
+
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
 !
-      SourceFile=__FILE__
+      SourceFile=MyFile
 !
 !-----------------------------------------------------------------------
 !  On first call, inquire about the contents of input NetCDF file.
@@ -120,16 +123,23 @@
      &                            Fcount, S(ifile)%Nfiles
               END IF
               exit_flag=4
-              IF (FoundError(exit_flag, NoError, __LINE__,              &
-     &                       __FILE__)) RETURN
+              IF (FoundError(exit_flag, NoError,                        &
+     &                       __LINE__, MyFile)) RETURN
             END IF
             S(ifile)%Fcount=Fcount
             S(ifile)%name=TRIM(S(ifile)%files(Fcount))
             CALL netcdf_close (ng, model, ncid)
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
             IF (label(1:3).eq.'FRC') THEN
               FRCids(ifile,ng)=-1
+              S(ifile)%ncid=-1
+            END IF
+            IF (label(1:3).eq.'BRY') THEN
+              BRYids(ifile,ng)=-1
+              S(ifile)%ncid=-1
+            END IF
+            IF (label(1:3).eq.'CLM') THEN
+              CLMids(ifile,ng)=-1
               S(ifile)%ncid=-1
             END IF
             EXIT
@@ -145,8 +155,7 @@
           WRITE (stdout,20) Fcount, label, TRIM(Vname(1,ifield))
         END IF
         exit_flag=4
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !  If several input NetCDF files (nfiles>1), scan files until the
@@ -160,8 +169,7 @@
 !
         IF (S(ifile)%ncid.eq.-1) THEN
           CALL netcdf_open (ng, model, Fname, 0, my_ncid)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) THEN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
             IF (Master) WRITE (stdout,60) TRIM(Fname)
             RETURN
           END IF
@@ -175,8 +183,7 @@
 !
         CALL netcdf_check_dim (ng, model, Fname,                        &
      &                         ncid = my_ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Inquire about requested variable.
 !
@@ -187,8 +194,7 @@
      &                       VarID = Vid,                               &
      &                       nVarDim = nvdim,                           &
      &                       nVarAtt = nvatt)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
 !
 !  Determine if gridded or point data.  Set variable dimensions.
 !
@@ -293,8 +299,7 @@
      &                                    TRIM(Vname(1,ifield)),        &
      &                                    TRIM(Fname)
             exit_flag=4
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END IF
         END IF
         IF (ABS(job).eq.1) THEN
@@ -302,8 +307,7 @@
             IF (Master) WRITE (stdout,40) TRIM(Vname(1,ifield)),        &
      &                                    Mrec, Nrec
             exit_flag=4
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) RETURN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
           END IF
         END IF
 !
@@ -314,9 +318,8 @@
      &                    ncfile, my_ncid, Tname(ifield), Nrec,         &
      &                    tdays(ng), Tid, Liocycle, Clength, Trec,      &
      &                    Tstr, Tend, Tmin, Tmax,  Tscale)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
-          SourceFile=__FILE__
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
+          SourceFile=MyFile
         END IF
 !
 !  Store variable information into global information arrays.  Also
@@ -366,6 +369,20 @@
               WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
             END DO
           END IF
+        ELSE IF ((nfiles.gt.1).and.(label(1:3).eq.'BRY')) THEN
+          IF (Master) THEN
+            WRITE (stdout,50) TRIM(Vname(1,ifield)), 'files:'
+            DO i=1,nfiles
+              WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
+            END DO
+          END IF
+        ELSE IF ((nfiles.gt.1).and.(label(1:3).eq.'CLM')) THEN
+          IF (Master) THEN
+            WRITE (stdout,50) TRIM(Vname(1,ifield)), 'files:'
+            DO i=1,nfiles
+              WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
+            END DO
+          END IF
         ELSE
           lstr=LEN_TRIM(ncfile)
           IF (Master) THEN
@@ -379,11 +396,24 @@
           END IF
         END IF
         exit_flag=2
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
       IF (.not.got_time) THEN
         IF ((nfiles.gt.1).and.(label(1:3).eq.'FRC')) THEN
+          IF (Master) THEN
+            WRITE (stdout,50) TRIM(Tname(ifield)), 'files:'
+            DO i=1,nfiles
+              WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
+            END DO
+          END IF
+        ELSE IF ((nfiles.gt.1).and.(label(1:3).eq.'BRY')) THEN
+          IF (Master) THEN
+            WRITE (stdout,50) TRIM(Tname(ifield)), 'files:'
+            DO i=1,nfiles
+              WRITE (stdout,'(15x,a)') TRIM(S(i)%name)
+            END DO
+          END IF
+        ELSE IF ((nfiles.gt.1).and.(label(1:3).eq.'CLM')) THEN
           IF (Master) THEN
             WRITE (stdout,50) TRIM(Tname(ifield)), 'files:'
             DO i=1,nfiles
@@ -403,8 +433,7 @@
           END IF
         END IF
         exit_flag=2
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) RETURN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
       END IF
 !
 !  If processing model forcing (multiple files allowed), check if file
@@ -421,6 +450,26 @@
           END IF
         END DO
       END IF
+      IF (label(1:3).eq.'BRY') THEN
+        DO ifile=1,nfiles
+          IF ((TRIM(ncfile).eq.TRIM(S(ifile)%name)).and.                &
+     &        (BRYids(ifile,ng).ne.-1).and.                             &
+     &        (ncid.ne.BRYids(ifile,ng))) THEN
+            ncid=BRYids(ifile,ng)
+            EXIT
+          END IF
+        END DO
+      END IF
+      IF (label(1:3).eq.'CLM') THEN
+        DO ifile=1,nfiles
+          IF ((TRIM(ncfile).eq.TRIM(S(ifile)%name)).and.                &
+     &        (CLMids(ifile,ng).ne.-1).and.                             &
+     &        (ncid.ne.CLMids(ifile,ng))) THEN
+            ncid=CLMids(ifile,ng)
+            EXIT
+          END IF
+        END DO
+      END IF
 !
 !  If appropriate, open input NetCDF file for reading.
 !  (HGA: it is not needed since file was already open and
@@ -428,8 +477,7 @@
 !
       IF (ncid.eq.-1) THEN
         CALL netcdf_open (ng, model, ncfile, 0, ncid)
-        IF (FoundError(exit_flag, NoError, __LINE__,                    &
-     &                 __FILE__)) THEN
+        IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
            IF (Master) WRITE (stdout,60) TRIM(ncfile)
           RETURN
         END IF
@@ -441,6 +489,22 @@
         DO ifile=1,nfiles
           IF (TRIM(ncfile).eq.TRIM(S(ifile)%name)) THEN
             FRCids(ifile,ng)=ncid
+            S(ifile)%ncid=ncid
+            EXIT
+          END IF
+        END DO
+      ELSE IF (label(1:3).eq.'BRY') THEN
+        DO ifile=1,nfiles
+          IF (TRIM(ncfile).eq.TRIM(S(ifile)%name)) THEN
+            BRYids(ifile,ng)=ncid
+            S(ifile)%ncid=ncid
+            EXIT
+          END IF
+        END DO
+      ELSE IF (label(1:3).eq.'CLM') THEN
+        DO ifile=1,nfiles
+          IF (TRIM(ncfile).eq.TRIM(S(ifile)%name)) THEN
+            CLMids(ifile,ng)=ncid
             S(ifile)%ncid=ncid
             EXIT
           END IF
@@ -487,8 +551,7 @@
      &                            ncid = ncid,                          &
      &                            start = (/Trec-1/),                   &
      &                            total = (/1/))
-            IF (FoundError(exit_flag, NoError, __LINE__,                &
-     &                     __FILE__)) THEN
+            IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) THEN
               IF (Master) WRITE (stdout,70) TRIM(Tname(ifield)), Trec
               RETURN
             END IF
@@ -563,6 +626,6 @@
   60  FORMAT (/,' INQUIRY     - unable to open input NetCDF file: ',a)
   70  FORMAT (/,' INQUIRY     - error while reading variable: ',a,2x,   &
      &        ' at TIME index = ',i4)
-
+!
       RETURN
       END SUBROUTINE inquiry

@@ -43,18 +43,22 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 7, __LINE__, __FILE__)
+      CALL wclock_on (ng, iNLM, 7, __LINE__, MyFile)
 # endif
       CALL obc_adjust_tile (ng, tile,                                   &
      &                      LBi, UBi, LBj, UBj, LBij, UBij,             &
      &                      IminS, ImaxS, JminS, JmaxS,                 &
      &                      Linp)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 7, __LINE__, __FILE__)
+      CALL wclock_off (ng, iNLM, 7, __LINE__, MyFile)
 # endif
+!
       RETURN
       END SUBROUTINE obc_adjust
 !
@@ -491,10 +495,10 @@
         END IF
       END DO
 # endif
-
+!
       RETURN
       END SUBROUTINE obc_adjust_tile
-
+!
       SUBROUTINE load_obc (ng, tile, Lout)
 !
 !=======================================================================
@@ -520,19 +524,22 @@
 !
 !  Local variable declarations.
 !
+      character (len=*), parameter :: MyFile =                          &
+     &  __FILE__//", load_obc"
+!
 # include "tile.h"
 !
 # ifdef PROFILE
-      CALL wclock_on (ng, iNLM, 8, __LINE__, __FILE__)
+      CALL wclock_on (ng, iNLM, 8, __LINE__, MyFile)
 # endif
       CALL load_obc_tile (ng, tile,                                     &
      &                    LBi, UBi, LBj, UBj, LBij, UBij,               &
      &                    IminS, ImaxS, JminS, JmaxS,                   &
      &                    Lout)
 # ifdef PROFILE
-      CALL wclock_off (ng, iNLM, 8, __LINE__, __FILE__)
+      CALL wclock_off (ng, iNLM, 8, __LINE__, MyFile)
 # endif
-
+!
       RETURN
       END SUBROUTINE load_obc
 !
@@ -568,7 +575,7 @@
 !  Load nonlinear open boundary fields into storage arrays.
 !-----------------------------------------------------------------------
 !
-      LOAD : IF (MOD(iic(ng)-1,nOBC(ng)).eq.0) THEN
+      LOAD_OBC : IF (MOD(iic(ng)-1,nOBC(ng)).eq.0) THEN
         OBCcount(ng)=OBCcount(ng)+1
         ic=OBCcount(ng)
 !
@@ -828,8 +835,8 @@
           END IF
         END DO
 # endif
-      END IF LOAD
-
+      END IF LOAD_OBC
+!
       RETURN
       END SUBROUTINE load_obc_tile
 #endif
