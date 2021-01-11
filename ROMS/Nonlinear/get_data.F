@@ -1078,15 +1078,14 @@
 !  Density !twu03182020
 !
         IF (LdensityCLM(ng).and.((iic(ng).eq.0).or.(iic(ng).eq.ntstart(ng)))) THEN
-          CALL get_3dfld (ng, iNLM, idDclm, CLM(ng)%ncid,            &
-     &                    1, CLM(ng), update(1),                        &
+          CALL get_3dfld (ng, iNLM, idDclm, CLM(1,ng)%ncid,            &
+     &                    1, CLM(1,ng), update(1),                        &
      &                    LBi, UBi, LBj, UBj, 1, N(ng), 2, 1,           &
 #  ifdef MASKING
      &                    GRID(ng) % rmask,                             &
 #  endif
      &                    CLIMA(ng) % denclmG)
-          IF (FoundError(exit_flag, NoError, __LINE__,                  &
-     &                   __FILE__)) RETURN
+          IF (FoundError(exit_flag, NoError, __LINE__, MyFile)) RETURN
         END IF
 #endif
 
